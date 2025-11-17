@@ -6,7 +6,7 @@ export default function Login() {
   return (
 
 
-    <div className="min-h-screen flex items-center justify-center bg-black px-4">
+    <div className="min-h-screen flex items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl">
         <h2 className="text-2xl font-bold text-center text-[#10B981] mb-6">ViaGo</h2>
         <p className="text-center text-gray-600 -mt-4 mb-6">Welcome back</p>
