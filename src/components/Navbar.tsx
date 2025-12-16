@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Navbar as BSNavbar, Container, Nav, Button } from 'react-bootstrap'
 
-const Navbar = () => {
+interface NavbarProps {
+  mode?: 'user' | 'driver'
+}
+
+const Navbar = ({ mode = 'user' }: NavbarProps) => {
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
 
@@ -46,12 +50,13 @@ const Navbar = () => {
             </Button>
             <Button
               onClick={() => {
-                navigate('/signup')
+                const path = mode === 'driver' ? '/driver-signup' : '/signup'
+                navigate(path)
                 setExpanded(false)
               }}
               className="btn-viago-primary"
             >
-              Sign Up
+              {mode === 'driver' ? 'Sign up to drive' : 'Sign Up'}
             </Button>
           </Nav>
         </BSNavbar.Collapse>

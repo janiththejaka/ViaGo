@@ -9,14 +9,14 @@ const DriverLanding = () => {
 
     return (
         <div className="min-vh-100 bg-viago-black text-white">
-            <Navbar />
+            <Navbar mode="driver" />
 
             {/* Hero Section */}
             <div className="driver-background d-flex align-items-center" style={{ minHeight: '80vh' }}>
                 <Container>
                     <Row>
                         <Col md={8} lg={6}>
-                            <div className="p-4 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)' }}>
+                            <div className="mt-5 p-4 rounded" >
                                 <h1 className="display-3 fw-bold mb-4">
                                     Drive when you want, <span className="text-viago-green">make what you need.</span>
                                 </h1>
@@ -25,7 +25,7 @@ const DriverLanding = () => {
                                 </p>
                                 <div className="d-flex gap-3">
                                     <Button
-                                        onClick={() => navigate('/signup')}
+                                        onClick={() => navigate('/driver-signup')}
                                         className="btn-viago-primary px-4 py-3 fw-bold fs-5"
                                     >
                                         Get Started
@@ -85,7 +85,7 @@ const DriverLanding = () => {
             </Container>
 
             {/* Requirements Section */}
-            <div className=" py-5">
+            <div className="driver-background py-5" style={{ minHeight: 'auto' }}>
                 <Container>
                     <Row className="justify-content-center">
                         <Col md={10} lg={8}>

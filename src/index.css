@@ -187,7 +187,16 @@ body {
 
 .driver-background {
   min-height: 100vh;
-  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://wwwhttps://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl1t5qQTGY4iSqqDmeL2xbmcoUjgtKa8aC9g&s.bluelankatours.com/wp-content/uploads/2020/06/Colombo-city.jpg');
+  background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://www.teamais.net/wp-content/uploads/2020/07/driver-hire-min.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+.driver-auth-background {
+  min-height: 100vh;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://www.lugaresincertos.com/wp-content/uploads/2025/01/Lago-beira-noite-colombo-sri-lanka-jorge-duarte-estevao-1170-x768-2-1024x672.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
