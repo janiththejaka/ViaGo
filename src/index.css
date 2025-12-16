@@ -1,0 +1,195 @@
+/* Import Bootstrap */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+
+/* ViaGO Custom Theme */
+:root {
+  --viago-green: #10b981;
+  --viago-green-hover: #059669;
+  --viago-dark: #0a0a0a;
+  --viago-black: #000000;
+  --viago-gray-800: #1f1f1f;
+  --viago-gray-700: #2a2a2a;
+  --viago-gray-600: #404040;
+  --viago-gray-500: #737373;
+  --viago-gray-400: #a3a3a3;
+  --viago-gray-300: #d4d4d4;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(#ffffff);
+  color: #000000;
+}
+
+/* Custom Bootstrap overrides for ViaGO theme */
+.bg-viago-dark {
+  background-color: var(--viago-dark) !important;
+}
+
+.bg-viago-black {
+  background-color: var(--viago-black) !important;
+}
+
+.bg-viago-green {
+  background-color: var(--viago-green) !important;
+}
+
+.text-viago-green {
+  color: var(--viago-green) !important;
+}
+
+.border-viago-gray {
+  border-color: var(--viago-gray-700) !important;
+}
+
+.border-viago-green {
+  border-color: var(--viago-green) !important;
+}
+
+.btn-viago-primary {
+  background-color: var(--viago-green);
+  border-color: var(--viago-green);
+  color: #000000;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-viago-primary:hover {
+  background-color: var(--viago-green-hover);
+  border-color: var(--viago-green-hover);
+  color: #000000;
+  transform: scale(1.02);
+}
+
+.btn-viago-primary:active {
+  transform: scale(0.98);
+}
+
+.form-control-viago {
+  background-color: var(--viago-dark);
+  border: 1px solid var(--viago-gray-700);
+  color: #ffffff;
+  transition: border-color 0.2s;
+}
+
+.form-control-viago:focus {
+  background-color: var(--viago-dark);
+  border-color: var(--viago-green);
+  color: #ffffff;
+  box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+}
+
+.form-control-viago::placeholder {
+  color: var(--viago-gray-500);
+}
+
+.card-viago {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--viago-gray-700);
+  backdrop-filter: blur(10px);
+}
+
+.card-viago-feature {
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--viago-gray-800);
+  transition: all 0.3s;
+}
+
+.card-viago-feature:hover {
+  border-color: var(--viago-green);
+  transform: scale(1.05);
+}
+
+.navbar-viago {
+  background-color: rgba(0, 0, 0, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--viago-gray-800);
+}
+
+.dropdown-viago {
+  background-color: var(--viago-dark);
+  border: 1px solid var(--viago-gray-700);
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdown-viago-item {
+  padding: 12px 16px;
+  color: #ffffff;
+  cursor: pointer;
+  border-bottom: 1px solid var(--viago-gray-800);
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.dropdown-viago-item:hover {
+  background-color: var(--viago-green);
+  color: #000000;
+}
+
+.dropdown-viago-item:last-child {
+  border-bottom: none;
+}
+
+/* Map container styles */
+.map-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--viago-gray-800);
+}
+
+/* Leaflet popup customization */
+.leaflet-popup-content-wrapper {
+  background-color: var(--viago-dark);
+  color: #ffffff;
+}
+
+.leaflet-popup-tip {
+  background-color: var(--viago-dark);
+}
+
+/* Auth Pages Background */
+.auth-background {
+  min-height: 100vh;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://www.bluelankatours.com/wp-content/uploads/2020/06/Colombo-city.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+.auth-card {
+  background-color: rgba(10, 10, 10, 0.5);
+  border: 1px solid var(--viago-gray-700);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+.driver-background {
+  min-height: 100vh;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://wwwhttps://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl1t5qQTGY4iSqqDmeL2xbmcoUjgtKa8aC9g&s.bluelankatours.com/wp-content/uploads/2020/06/Colombo-city.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
