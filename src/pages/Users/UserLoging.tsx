@@ -17,22 +17,24 @@ const Login = () => {
         setLoading(true)
 
         try {
-            await authService.login(identifier, password)
-            navigate('/')
-        } catch (err) {
-            setError('Invalid credentials. Please try again.')
+            const response = await authService.login(identifier, password)
+
+            if (response.success) {
+                // Redirect to ride request page after successful login
+                navigate('/ride-request-page')
+            } else {
+                setError(response.message || 'Login failed. Please try again.')
+            }
+        } catch (err: any) {
+            setError(err.message || 'Network error. Please check your connection and try again.')
         } finally {
             setLoading(false)
         }
     }
 
-    const handleGoogleLogin = async () => {
-        try {
-            await authService.googleAuth()
-            navigate('/')
-        } catch (err) {
-            setError('Google login failed.')
-        }
+    const handleGoogleLogin = () => {
+        // Pass the redirect URL to navigate to after successful Google login
+        authService.googleLogin('/ride-request-page')
     }
 
     return (

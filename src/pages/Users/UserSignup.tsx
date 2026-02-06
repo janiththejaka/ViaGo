@@ -6,9 +6,10 @@ import Footer from '../../components/Footer'
 
 const Signup = () => {
     const navigate = useNavigate()
-    const [name, setName] = useState('')
-    const [identifier, setIdentifier] = useState('')
+    const [username, setUsername] = useState('')
+    const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [role, setRole] = useState<'RIDER' | 'DRIVER'>('RIDER')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
 
@@ -18,22 +19,24 @@ const Signup = () => {
         setLoading(true)
 
         try {
-            await authService.signup(name, identifier, password)
-            navigate('/login')
+            const response = await authService.signup(username, email, password, role)
+
+            if (response.success) {
+                // Redirect to ride request page after successful signup
+                navigate('/ride-request-page')
+            } else {
+                setError(response.message || 'Signup failed. Please try again.')
+            }
         } catch (err: any) {
-            setError(err.message || 'Signup failed. Please try again.')
+            setError(err.message || 'Network error. Please check your connection and try again.')
         } finally {
             setLoading(false)
         }
     }
 
-    const handleGoogleSignup = async () => {
-        try {
-            await authService.googleAuth()
-            navigate('/login')
-        } catch (err) {
-            setError('Google signup failed.')
-        }
+    const handleGoogleSignup = () => {
+        // Pass the redirect URL to navigate to after successful Google signup
+        authService.googleSignup('/ride-request-page')
     }
 
     return (
@@ -55,30 +58,30 @@ const Signup = () => {
 
                                     <Form onSubmit={handleSignup}>
                                         <Form.Group className="mb-3">
-                                            <Form.Label className="text-white-50 small">Full Name</Form.Label>
+                                            <Form.Label className="text-white-50 small">Username</Form.Label>
                                             <Form.Control
                                                 type="text"
-                                                placeholder="Enter your name"
-                                                value={name}
-                                                onChange={(e) => setName(e.target.value)}
+                                                placeholder="Choose a username"
+                                                value={username}
+                                                onChange={(e) => setUsername(e.target.value)}
                                                 className="form-control-viago"
                                                 required
                                             />
                                         </Form.Group>
 
                                         <Form.Group className="mb-3">
-                                            <Form.Label className="text-white-50 small">Mobile Number or Email</Form.Label>
+                                            <Form.Label className="text-white-50 small">Email</Form.Label>
                                             <Form.Control
-                                                type="text"
-                                                placeholder="Enter email or mobile"
-                                                value={identifier}
-                                                onChange={(e) => setIdentifier(e.target.value)}
+                                                type="email"
+                                                placeholder="Enter your email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
                                                 className="form-control-viago"
                                                 required
                                             />
                                         </Form.Group>
 
-                                        <Form.Group className="mb-4">
+                                        <Form.Group className="mb-3">
                                             <Form.Label className="text-white-50 small">Password</Form.Label>
                                             <Form.Control
                                                 type="password"
@@ -88,6 +91,18 @@ const Signup = () => {
                                                 className="form-control-viago"
                                                 required
                                             />
+                                        </Form.Group>
+
+                                        <Form.Group className="mb-4">
+                                            <Form.Label className="text-white-50 small">I want to</Form.Label>
+                                            <Form.Select
+                                                value={role}
+                                                onChange={(e) => setRole(e.target.value as 'RIDER' | 'DRIVER')}
+                                                className="form-control-viago"
+                                            >
+                                                <option value="RIDER">Request rides</option>
+                                                <option value="DRIVER">Drive and earn</option>
+                                            </Form.Select>
                                         </Form.Group>
 
                                         <Button
