@@ -1,5 +1,5 @@
 // src/components/LiveTrackingMap.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { locationService } from '../services/LocationService';
 
