@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Autocomplete } from '@react-google-maps/api';
 import { Button, Form, Card, Modal, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
 // Icons
@@ -223,7 +223,7 @@ export default function BookingPanel({
             {/* --- MOBILE VIEW --- */}
             {!tripDetails && (
                 <div className="d-md-none fixed-bottom bg-white p-3 rounded-top-4 shadow-lg" style={{ zIndex: 100 }}>
-                    <h5 className="mb-3 fw-bold">Where to?</h5>
+                    <h5 className="mb-3 fw-bold">Select Location</h5>
                     <div
                         className="bg-light p-3 rounded-3 text-muted d-flex align-items-center gap-2 border"
                         onClick={() => handleInputClick('drop')}

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
     GoogleMap,
     LoadScript,
@@ -7,8 +7,6 @@ import {
     Marker
 } from '@react-google-maps/api';
 
-// Map එකේ පෙනුම
-const containerStyle = { width: '100%', height: '100vh' };
 const center = { lat: 6.9271, lng: 79.8612 }; // Default Colombo
 
 // Google Maps Libraries (Places අනිවාර්යයි)

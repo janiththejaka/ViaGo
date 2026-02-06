@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LoadScript } from '@react-google-maps/api';
 import RideMap from '../components/RideMap';
 import BookingPanel from '../components/BookingPanel';
-import TopNavbar from '../components/TopNavbar'; // <--- NEW IMPORT
+import TopNavbar from '../components/TopNavbar';
+import { authService } from '../services/authService';
 
 const libraries: ("places")[] = ["places"];
 
@@ -11,8 +12,8 @@ export default function RideRequestPage() {
     // --- NAVIGATION ---
     const navigate = useNavigate();
 
-    // --- USER DATA (Simulating Backend/Cookie Fetch) ---
-    const [user, setUser] = useState({ name: "Kavindu", image: "" });
+    // --- USER DATA (Fetch from backend/localStorage) ---
+    const [user, setUser] = useState<{ name: string; image: string }>({ name: "Guest", image: "" });
 
     // State Management
     const [pickup, setPickup] = useState<{ lat: number; lng: number } | null>(null);
@@ -27,12 +28,19 @@ export default function RideRequestPage() {
     // "Select on Map" Mode State
     const [selectingMode, setSelectingMode] = useState<'pickup' | 'drop' | null>(null);
 
-    // Effect: Page Load වුනාම User Data ගන්න (Example)
+    // Effect: Fetch user data from localStorage on page load
     useEffect(() => {
-        // මෙතනදී ඔබට Cookies වලින් නම කියවන්න පුළුවන්
-        // const cookieName = getCookie("username");
-        // if(cookieName) setUser({ name: cookieName, image: "" });
-    }, []);
+        const userData = authService.getCurrentUser();
+        if (userData) {
+            setUser({
+                name: userData.username,
+                image: "" // Can be extended to fetch profile image from backend
+            });
+        } else {
+            // If no user is logged in, redirect to login page
+            navigate('/login');
+        }
+    }, [navigate]);
 
     // Handler: Back Button Click කළාම Home එකට යනවා
     const handleBackClick = () => {

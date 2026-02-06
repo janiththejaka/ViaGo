@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button, Image } from 'react-bootstrap';
 import { FaArrowLeft, FaUserCircle } from 'react-icons/fa';
 
