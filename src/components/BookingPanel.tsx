@@ -1,8 +1,19 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Autocomplete } from '@react-google-maps/api';
-import { Button, Form, Card, Modal, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Form, Card, Modal, Spinner, OverlayTrigger, Tooltip, Alert, Badge } from 'react-bootstrap';
+import { IMessage } from '@stomp/stompjs';
 // Icons
-import { FaMapMarkerAlt, FaTimes, FaCar, FaSearch, FaLocationArrow } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaTimes, FaCar, FaSearch, FaLocationArrow, FaStar } from 'react-icons/fa';
+import { TEST_CONFIG } from '../config/testConfig';
+
+interface DriverDetails {
+    driverId: number;
+    driverName: string;
+    vehicleType: string;
+    vehicleNumber: string;
+    rating: number;
+    eta: string;
+}
 
 interface BookingPanelProps {
     pickupText: string;
@@ -13,20 +24,71 @@ interface BookingPanelProps {
     onSelectOnMap: (mode: 'pickup' | 'drop') => void;
     calculateRoute: () => void;
     tripDetails: { distance: string; duration: string; price: number } | null;
+    pickup: { lat: number; lng: number } | null;
+    drop: { lat: number; lng: number } | null;
     loading: boolean;
+    // WebSocket props
+    isConnected: boolean;
+    subscribe: (destination: string, callback: (message: IMessage) => void) => any;
+    publish: (destination: string, body: any) => void;
 }
 
 export default function BookingPanel({
     pickupText, setPickupText, dropText, setDropText,
-    onPlaceSelected, onSelectOnMap, calculateRoute, tripDetails, loading
+    onPlaceSelected, onSelectOnMap, calculateRoute, tripDetails, pickup, drop, loading,
+    isConnected, subscribe, publish
 }: BookingPanelProps) {
 
     // State
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const [activeField, setActiveField] = useState<'pickup' | 'drop'>('pickup');
 
+    // Ride status state
+    const [rideStatus, setRideStatus] = useState<'IDLE' | 'SEARCHING' | 'DRIVER_FOUND' | 'ACCEPTED'>('IDLE');
+    const [driverDetails, setDriverDetails] = useState<DriverDetails | null>(null);
+
     const pickupRef = useRef<google.maps.places.Autocomplete | null>(null);
     const dropRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+    // Subscribe to ride status updates
+    useEffect(() => {
+        if (isConnected) {
+            const riderId = TEST_CONFIG.RIDER.id;
+            console.log(`🔌 Rider subscribing to /topic/ride-status/${riderId}`);
+
+            const subscription = subscribe(`/topic/ride-status/${riderId}`, (message) => {
+                console.log('📨 RAW RIDER MESSAGE RECEIVED:', message);
+                console.log('📨 RIDER MESSAGE BODY:', message.body);
+
+                try {
+                    const statusUpdate = JSON.parse(message.body);
+                    console.log('📨 Ride status update:', statusUpdate);
+
+                    if (statusUpdate.status === 'SEARCHING') {
+                        console.log('🔍 Status: SEARCHING');
+                        setRideStatus('SEARCHING');
+                    } else if (statusUpdate.status === 'DRIVER_FOUND' && statusUpdate.driver) {
+                        console.log('✅ Status: DRIVER_FOUND', statusUpdate.driver);
+                        setDriverDetails(statusUpdate.driver);
+                        setRideStatus('DRIVER_FOUND');
+                    } else if (statusUpdate.status === 'ACCEPTED') {
+                        console.log('✅ Status: ACCEPTED');
+                        setRideStatus('ACCEPTED');
+                    }
+                } catch (err) {
+                    console.error('❌ Error parsing ride status:', err);
+                }
+            });
+
+            if (subscription) {
+                console.log(`✅ Rider successfully subscribed to /topic/ride-status/${riderId}`);
+            }
+
+            return () => {
+                subscription?.unsubscribe();
+            };
+        }
+    }, [isConnected, subscribe]);
 
     // Mobile Input Click
     const handleInputClick = (field: 'pickup' | 'drop') => {
@@ -45,6 +107,31 @@ export default function BookingPanel({
     // Helper: Focus Handler
     const handleFocus = (field: 'pickup' | 'drop') => {
         setActiveField(field);
+    };
+
+    // Handle ride request
+    const handleRequestRide = () => {
+        if (!pickup || !drop || !tripDetails) return;
+
+        const rideRequest = {
+            riderId: TEST_CONFIG.RIDER.id,
+            riderName: TEST_CONFIG.RIDER.name,
+            pickupLat: pickup.lat,
+            pickupLng: pickup.lng,
+            pickupAddress: pickupText,
+            dropAddress: dropText,
+            price: tripDetails.price
+        };
+
+        publish('/app/request-ride', rideRequest);
+        setRideStatus('SEARCHING');
+        console.log('🚕 Ride requested:', rideRequest);
+    };
+
+    // Handle cancel search
+    const handleCancelSearch = () => {
+        setRideStatus('IDLE');
+        setDriverDetails(null);
     };
 
     // --- RENDER INPUTS (Desktop & Mobile) ---
@@ -186,7 +273,8 @@ export default function BookingPanel({
 
                     {renderInputs(false)}
 
-                    {!tripDetails && (
+                    {/* IDLE State - Show See Prices or Request Ride */}
+                    {rideStatus === 'IDLE' && !tripDetails && (
                         <Button
                             className="w-100 mt-5 py-3 fw-bold rounded-pill"
                             variant="dark"
@@ -198,7 +286,7 @@ export default function BookingPanel({
                         </Button>
                     )}
 
-                    {tripDetails && (
+                    {rideStatus === 'IDLE' && tripDetails && (
                         <div className="mt-4">
                             <div className="d-flex align-items-center justify-content-between p-4 border rounded-4 mb-4 bg-light">
                                 <div className="d-flex align-items-center gap-3">
@@ -212,9 +300,69 @@ export default function BookingPanel({
                                 </div>
                                 <h3 className="mb-0 fw-bold">LKR {tripDetails.price}</h3>
                             </div>
-                            <Button className="w-100 py-3 fs-5 fw-bold rounded-pill" variant="success">
+                            <Button
+                                className="w-100 py-3 fs-5 fw-bold rounded-pill"
+                                variant="success"
+                                onClick={handleRequestRide}
+                                disabled={!isConnected}
+                            >
                                 REQUEST VIAGO
                             </Button>
+                        </div>
+                    )}
+
+                    {/* SEARCHING State */}
+                    {rideStatus === 'SEARCHING' && (
+                        <div className="mt-4 text-center">
+                            <Alert variant="info" className="mb-4">
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                <strong>Searching for nearby drivers...</strong>
+                                <p className="mb-0 mt-2 small">This may take a few moments</p>
+                            </Alert>
+                            <Button
+                                variant="outline-secondary"
+                                className="w-100 py-3 rounded-pill"
+                                onClick={handleCancelSearch}
+                            >
+                                Cancel Search
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* DRIVER_FOUND State */}
+                    {rideStatus === 'DRIVER_FOUND' && driverDetails && (
+                        <div className="mt-4">
+                            <Alert variant="success" className="mb-4">
+                                <strong>Driver Found!</strong>
+                            </Alert>
+
+                            <Card className="border-0 bg-light mb-4">
+                                <Card.Body>
+                                    <div className="d-flex align-items-center gap-3 mb-3">
+                                        <div className="bg-success rounded-circle p-3 text-white">
+                                            <FaCar size={24} />
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h5 className="mb-0 fw-bold">{driverDetails.driverName}</h5>
+                                            <small className="text-muted">{driverDetails.vehicleType} • {driverDetails.vehicleNumber}</small>
+                                        </div>
+                                        <div className="text-end">
+                                            <Badge bg="warning" text="dark" className="d-flex align-items-center gap-1">
+                                                <FaStar size={12} />
+                                                {driverDetails.rating}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center p-3 bg-white rounded">
+                                        <span className="text-muted small">Estimated Arrival</span>
+                                        <strong>{driverDetails.eta}</strong>
+                                    </div>
+                                </Card.Body>
+                            </Card>
+
+                            <Alert variant="info" className="small">
+                                Your driver is on the way to pick you up!
+                            </Alert>
                         </div>
                     )}
                 </Card.Body>
@@ -233,7 +381,7 @@ export default function BookingPanel({
                 </div>
             )}
 
-            {tripDetails && (
+            {tripDetails && rideStatus === 'IDLE' && (
                 <div className="d-md-none fixed-bottom bg-white p-4 rounded-top-4 shadow-lg" style={{ zIndex: 100 }}>
                     <div className="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
                         <div className="d-flex flex-column">
@@ -249,8 +397,60 @@ export default function BookingPanel({
                             <small className="text-muted">Recommended</small>
                         </div>
                     </div>
-                    <Button className="w-100 py-3 fw-bold fs-5" variant="success">CONFIRM VIAGO</Button>
+                    <Button
+                        className="w-100 py-3 fw-bold fs-5"
+                        variant="success"
+                        onClick={handleRequestRide}
+                        disabled={!isConnected}
+                    >
+                        REQUEST VIAGO
+                    </Button>
                     <Button variant="link" className="w-100 text-muted mt-2 text-decoration-none" onClick={() => setShowMobileSearch(true)}>Change Destination</Button>
+                </div>
+            )}
+
+            {/* Mobile SEARCHING State */}
+            {rideStatus === 'SEARCHING' && (
+                <div className="d-md-none fixed-bottom bg-white p-4 rounded-top-4 shadow-lg" style={{ zIndex: 100 }}>
+                    <div className="text-center">
+                        <Spinner animation="border" variant="success" className="mb-3" />
+                        <h5 className="fw-bold mb-2">Searching for nearby drivers...</h5>
+                        <p className="text-muted mb-4">This may take a few moments</p>
+                        <Button
+                            variant="outline-secondary"
+                            className="w-100 py-3 rounded-pill"
+                            onClick={handleCancelSearch}
+                        >
+                            Cancel Search
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Mobile DRIVER_FOUND State */}
+            {rideStatus === 'DRIVER_FOUND' && driverDetails && (
+                <div className="d-md-none fixed-bottom bg-white p-4 rounded-top-4 shadow-lg" style={{ zIndex: 100 }}>
+                    <Alert variant="success" className="mb-3">
+                        <strong>Driver Found!</strong>
+                    </Alert>
+                    <div className="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3">
+                        <div className="bg-success rounded-circle p-3 text-white">
+                            <FaCar size={24} />
+                        </div>
+                        <div className="flex-grow-1">
+                            <h5 className="mb-0 fw-bold">{driverDetails.driverName}</h5>
+                            <small className="text-muted">{driverDetails.vehicleType} • {driverDetails.vehicleNumber}</small>
+                        </div>
+                        <Badge bg="warning" text="dark" className="d-flex align-items-center gap-1">
+                            <FaStar size={12} />
+                            {driverDetails.rating}
+                        </Badge>
+                    </div>
+                    <div className="text-center p-3 bg-light rounded-3">
+                        <small className="text-muted">Estimated Arrival</small>
+                        <h4 className="fw-bold text-success mb-0">{driverDetails.eta}</h4>
+                    </div>
+                    <p className="text-center text-muted mt-3 mb-0">Your driver is on the way to pick you up!</p>
                 </div>
             )}
 
