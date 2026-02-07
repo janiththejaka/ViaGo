@@ -37,6 +37,19 @@ const Navbar = ({ mode = 'user' }: NavbarProps) => {
 
         <BSNavbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto gap-2">
+            {mode === 'user' && (
+              <Button
+                variant="link"
+                onClick={() => {
+                  navigate('/drive')
+                  setExpanded(false)
+                }}
+                className="text-white text-decoration-none"
+                style={{ fontWeight: 500 }}
+              >
+                Let's Drive
+              </Button>
+            )}
             <Button
               variant="link"
               onClick={() => {
