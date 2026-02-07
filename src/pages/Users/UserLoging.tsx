@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Container, Card, Form, Button, Alert, Row, Col } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import { authService } from '../../services/authService'
 import Footer from '../../components/Footer'
 
 const Login = () => {
     const navigate = useNavigate()
+    const { login } = useAuth()
     const [identifier, setIdentifier] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -17,16 +19,18 @@ const Login = () => {
         setLoading(true)
 
         try {
-            const response = await authService.login(identifier, password)
+            await login(identifier, password)
 
-            if (response.success) {
-                // Redirect to ride request page after successful login
-                navigate('/ride-request-page')
-            } else {
-                setError(response.message || 'Login failed. Please try again.')
+            // Get user data to determine role-based redirect
+            const user = authService.getCurrentUser()
+
+            if (user) {
+                // Redirect based on user role
+                const redirectPath = user.role === 'DRIVER' ? '/driver-dashboard' : '/ride-request-page'
+                navigate(redirectPath)
             }
         } catch (err: any) {
-            setError(err.message || 'Network error. Please check your connection and try again.')
+            setError(err.message || 'Login failed. Please try again.')
         } finally {
             setLoading(false)
         }
@@ -34,6 +38,7 @@ const Login = () => {
 
     const handleGoogleLogin = () => {
         // Pass the redirect URL to navigate to after successful Google login
+        // The backend should handle role-based redirects for Google login
         authService.googleLogin('/ride-request-page')
     }
 
