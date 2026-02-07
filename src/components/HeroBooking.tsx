@@ -123,18 +123,18 @@ const HeroBooking = ({
   return (
     <div className="d-flex align-items-center justify-content-center p-3 p-sm-4" style={{ minHeight: '500px' }}>
       <div className="w-100" style={{ maxWidth: '450px' }}>
-        <Card className="card-viago p-4">
+        <Card className="card-viago-light p-4">
           <Card.Body>
-            <h2 className="text-white fw-bold mb-2" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}>
+            <h2 className="text-dark fw-bold mb-2" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}>
               Where ever with <span className="text-viago-green">Via</span>Go
             </h2>
-            <p className="text-secondary mb-4" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>
+            <p className="text-muted mb-4" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>
               Enter your destinations to get started
             </p>
 
             <Form>
               <Form.Group className="mb-3 position-relative">
-                <Form.Label className="text-white-50 small">Pickup Location</Form.Label>
+                <Form.Label className="text-muted small">Pickup Location</Form.Label>
                 <div className="position-relative">
                   <span className="position-absolute top-50 translate-middle-y ms-3 text-viago-green" style={{ zIndex: 10 }}>
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -149,7 +149,7 @@ const HeroBooking = ({
                     onFocus={() => setFocused('pickup')}
                     onBlur={() => setTimeout(() => setFocused((f) => (f === 'pickup' ? null : f)), 150)}
                     placeholder="Enter pickup location"
-                    className="form-control-viago ps-5 pe-5"
+                    className="form-control-viago-light ps-5 pe-5"
                     style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
                   />
                   <span
@@ -172,12 +172,12 @@ const HeroBooking = ({
                 </div>
 
                 {focused === 'pickup' && (
-                  <div className="dropdown-viago position-absolute w-100 mt-2" style={{ zIndex: 1000 }}>
+                  <div className="dropdown-viago-light position-absolute w-100 mt-2" style={{ zIndex: 1000 }}>
                     {userLocation && (
                       <div
                         onMouseDown={preventBlur}
                         onClick={() => useCurrent('pickup')}
-                        className="dropdown-viago-item"
+                        className="dropdown-viago-light-item"
                       >
                         📍 Use current location
                       </div>
@@ -185,7 +185,7 @@ const HeroBooking = ({
                     <div
                       onMouseDown={preventBlur}
                       onClick={() => onSelectMap('pickup')}
-                      className="dropdown-viago-item"
+                      className="dropdown-viago-light-item"
                     >
                       🗺️ Select on map
                     </div>
@@ -197,7 +197,7 @@ const HeroBooking = ({
                           handlePickupSelect(item)
                           setFocused(null)
                         }}
-                        className="dropdown-viago-item"
+                        className="dropdown-viago-light-item"
                       >
                         {item.display_name}
                       </div>
@@ -207,7 +207,7 @@ const HeroBooking = ({
               </Form.Group>
 
               <Form.Group className="mb-4 position-relative">
-                <Form.Label className="text-white-50 small">Drop Location</Form.Label>
+                <Form.Label className="text-muted small">Drop Location</Form.Label>
                 <div className="position-relative">
                   <span className="position-absolute top-50 translate-middle-y ms-3 text-viago-green" style={{ zIndex: 10 }}>
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -222,17 +222,17 @@ const HeroBooking = ({
                     onFocus={() => setFocused('drop')}
                     onBlur={() => setTimeout(() => setFocused((f) => (f === 'drop' ? null : f)), 150)}
                     placeholder="Enter drop location"
-                    className="form-control-viago ps-5"
+                    className="form-control-viago-light ps-5"
                     style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
                   />
                 </div>
 
                 {focused === 'drop' && (
-                  <div className="dropdown-viago position-absolute w-100 mt-2" style={{ zIndex: 1000 }}>
+                  <div className="dropdown-viago-light position-absolute w-100 mt-2" style={{ zIndex: 1000 }}>
                     <div
                       onMouseDown={preventBlur}
                       onClick={() => onSelectMap('drop')}
-                      className="dropdown-viago-item"
+                      className="dropdown-viago-light-item"
                     >
                       🗺️ Select on map
                     </div>
@@ -244,7 +244,7 @@ const HeroBooking = ({
                           handleDropSelect(item)
                           setFocused(null)
                         }}
-                        className="dropdown-viago-item"
+                        className="dropdown-viago-light-item"
                       >
                         {item.display_name}
                       </div>
@@ -254,21 +254,21 @@ const HeroBooking = ({
               </Form.Group>
 
               {distance && duration && (
-                <Card className="mt-3 border-viago-green bg-black bg-opacity-50">
+                <Card className="mt-3 border-viago-green bg-white" style={{ borderWidth: '2px' }}>
                   <Card.Body>
-                    <h4 className="text-white h6 fw-semibold mb-3">
+                    <h4 className="text-dark h6 fw-semibold mb-3">
                       <svg className="me-2" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Trip Details
                     </h4>
                     <div className="d-flex justify-content-between mb-2">
-                      <span className="text-secondary">Distance</span>
-                      <span className="text-white fw-semibold fs-5">{distance} km</span>
+                      <span className="text-muted">Distance</span>
+                      <span className="text-dark fw-semibold fs-5">{distance} km</span>
                     </div>
                     <div className="d-flex justify-content-between">
-                      <span className="text-secondary">Duration</span>
-                      <span className="text-white fw-semibold fs-5">{duration} mins</span>
+                      <span className="text-muted">Duration</span>
+                      <span className="text-dark fw-semibold fs-5">{duration} mins</span>
                     </div>
                   </Card.Body>
                 </Card>

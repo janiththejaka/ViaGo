@@ -40,13 +40,13 @@ const FeaturesSection = () => {
   ]
 
   return (
-    <section className="py-5 bg-viago-dark">
+    <section className="py-5 bg-white">
       <Container>
         <div className="text-center mb-5">
-          <h2 className="text-white fw-bold mb-3" style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)' }}>
+          <h2 className="text-dark fw-bold mb-3" style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)' }}>
             Why Choose ViaGO?
           </h2>
-          <p className="text-secondary mx-auto" style={{ maxWidth: '600px' }}>
+          <p className="text-muted mx-auto" style={{ maxWidth: '600px' }}>
             Experience the future of ride-sharing with our reliable, safe, and affordable service
           </p>
         </div>
@@ -54,13 +54,13 @@ const FeaturesSection = () => {
         <Row className="g-4 mb-5">
           {features.map((feature, index) => (
             <Col key={index} xs={12} md={4}>
-              <Card className="card-viago-feature h-100 p-4">
+              <Card className="card-viago-feature-light h-100 p-4">
                 <Card.Body>
                   <div className="text-viago-green mb-3">
                     {feature.icon}
                   </div>
-                  <h3 className="text-white h5 mb-3">{feature.title}</h3>
-                  <p className="text-secondary mb-0">{feature.description}</p>
+                  <h3 className="text-dark h5 mb-3">{feature.title}</h3>
+                  <p className="text-muted mb-0">{feature.description}</p>
                 </Card.Body>
               </Card>
             </Col>
@@ -73,7 +73,7 @@ const FeaturesSection = () => {
               <div className="text-viago-green fw-bold mb-2" style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)' }}>
                 {stat.value}
               </div>
-              <div className="text-secondary small">{stat.label}</div>
+              <div className="text-muted small">{stat.label}</div>
             </Col>
           ))}
         </Row>

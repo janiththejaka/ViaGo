@@ -143,7 +143,7 @@ const Home = () => {
   }
 
   return (
-    <div className="min-vh-100 bg-viago-black">
+    <div className="min-vh-100 bg-white">
       <Navbar />
 
       <main style={{ paddingTop: '70px' }}>
