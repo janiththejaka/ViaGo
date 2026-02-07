@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Form, Card, ListGroup } from 'react-bootstrap'
+import { Form, Card } from 'react-bootstrap'
 
 interface Suggestion {
   place_id: string
