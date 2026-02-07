@@ -126,7 +126,7 @@ const HeroBooking = ({
         <Card className="card-viago p-4">
           <Card.Body>
             <h2 className="text-white fw-bold mb-2" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}>
-              Get a quick ride
+              Where ever with <span className="text-viago-green">Via</span>Go
             </h2>
             <p className="text-secondary mb-4" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)' }}>
               Enter your destinations to get started
