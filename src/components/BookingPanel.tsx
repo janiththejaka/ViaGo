@@ -7,12 +7,11 @@ import { FaMapMarkerAlt, FaTimes, FaCar, FaSearch, FaLocationArrow, FaStar } fro
 import { TEST_CONFIG } from '../config/testConfig';
 
 interface DriverDetails {
-    driverId: number;
-    driverName: string;
-    vehicleType: string;
-    vehicleNumber: string;
-    rating: number;
-    eta: string;
+    id: number;
+    name: string;
+    phone: string;
+    vehicleNo: string;
+    vehicleModel?: string;
 }
 
 interface BookingPanelProps {
@@ -67,9 +66,9 @@ export default function BookingPanel({
                     if (statusUpdate.status === 'SEARCHING') {
                         console.log('🔍 Status: SEARCHING');
                         setRideStatus('SEARCHING');
-                    } else if (statusUpdate.status === 'DRIVER_FOUND' && statusUpdate.driver) {
-                        console.log('✅ Status: DRIVER_FOUND', statusUpdate.driver);
-                        setDriverDetails(statusUpdate.driver);
+                    } else if (statusUpdate.status === 'DRIVER_FOUND' && statusUpdate.data) {
+                        console.log('✅ Status: DRIVER_FOUND', statusUpdate.data);
+                        setDriverDetails(statusUpdate.data);
                         setRideStatus('DRIVER_FOUND');
                     } else if (statusUpdate.status === 'ACCEPTED') {
                         console.log('✅ Status: ACCEPTED');
@@ -343,19 +342,17 @@ export default function BookingPanel({
                                             <FaCar size={24} />
                                         </div>
                                         <div className="flex-grow-1">
-                                            <h5 className="mb-0 fw-bold">{driverDetails.driverName}</h5>
-                                            <small className="text-muted">{driverDetails.vehicleType} • {driverDetails.vehicleNumber}</small>
-                                        </div>
-                                        <div className="text-end">
-                                            <Badge bg="warning" text="dark" className="d-flex align-items-center gap-1">
-                                                <FaStar size={12} />
-                                                {driverDetails.rating}
-                                            </Badge>
+                                            <h5 className="mb-0 fw-bold">{driverDetails.name}</h5>
+                                            <small className="text-muted">{driverDetails.vehicleModel || driverDetails.vehicleNo}</small>
                                         </div>
                                     </div>
+                                    <div className="d-flex justify-content-between align-items-center p-3 bg-white rounded mb-2">
+                                        <span className="text-muted small">Vehicle Number</span>
+                                        <strong>{driverDetails.vehicleNo}</strong>
+                                    </div>
                                     <div className="d-flex justify-content-between align-items-center p-3 bg-white rounded">
-                                        <span className="text-muted small">Estimated Arrival</span>
-                                        <strong>{driverDetails.eta}</strong>
+                                        <span className="text-muted small">Phone</span>
+                                        <strong>{driverDetails.phone}</strong>
                                     </div>
                                 </Card.Body>
                             </Card>
@@ -438,17 +435,17 @@ export default function BookingPanel({
                             <FaCar size={24} />
                         </div>
                         <div className="flex-grow-1">
-                            <h5 className="mb-0 fw-bold">{driverDetails.driverName}</h5>
-                            <small className="text-muted">{driverDetails.vehicleType} • {driverDetails.vehicleNumber}</small>
+                            <h5 className="mb-0 fw-bold">{driverDetails.name}</h5>
+                            <small className="text-muted">{driverDetails.vehicleModel || driverDetails.vehicleNo}</small>
                         </div>
-                        <Badge bg="warning" text="dark" className="d-flex align-items-center gap-1">
-                            <FaStar size={12} />
-                            {driverDetails.rating}
-                        </Badge>
                     </div>
-                    <div className="text-center p-3 bg-light rounded-3">
-                        <small className="text-muted">Estimated Arrival</small>
-                        <h4 className="fw-bold text-success mb-0">{driverDetails.eta}</h4>
+                    <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 mb-2">
+                        <small className="text-muted">Vehicle Number</small>
+                        <strong>{driverDetails.vehicleNo}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded-3">
+                        <small className="text-muted">Phone</small>
+                        <strong>{driverDetails.phone}</strong>
                     </div>
                     <p className="text-center text-muted mt-3 mb-0">Your driver is on the way to pick you up!</p>
                 </div>
