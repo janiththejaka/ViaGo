@@ -264,10 +264,13 @@ const DriverSignup = () => {
                         You have successfully joined the ViaGO drivers community.
                     </p>
                     <Button
-                        onClick={() => navigate('/driver-dashboard')}
+                        onClick={() => {
+                            authService.logout()
+                            navigate('/login')
+                        }}
                         className="btn-viago-primary px-5 py-3 fw-bold fs-5 rounded-pill"
                     >
-                        Let's go First ride
+                        Go to Login
                     </Button>
                 </Modal.Body>
             </Modal>

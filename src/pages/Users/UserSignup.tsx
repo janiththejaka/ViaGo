@@ -30,8 +30,8 @@ const Signup = () => {
             const response = await authService.signup(username, email, password, role)
 
             if (response.success) {
-                // Redirect to ride request page after successful signup
-                navigate('/ride-request-page')
+                authService.logout()
+                navigate('/login')
             } else {
                 setError(response.message || 'Signup failed. Please try again.')
             }
