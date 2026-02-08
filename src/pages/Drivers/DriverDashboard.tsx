@@ -33,9 +33,10 @@ const DriverDashboard = () => {
     const [activeTab, setActiveTab] = useState('dashboard')
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-    // Get driver ID from localStorage (for multi-driver testing)
-    const driverId = getTestDriverId()
-    const driverData = getDriverData(driverId)
+    // Get driver ID from localStorage ONCE on mount (for multi-driver testing)
+    // Use useState to prevent recalculation on every render
+    const [driverId] = useState(() => getTestDriverId())
+    const [driverData] = useState(() => getDriverData(driverId))
 
     console.log('🚗 Driver Dashboard initialized for:', driverData.name, '(ID:', driverId, ')')
 

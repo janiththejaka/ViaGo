@@ -89,9 +89,16 @@ export const useWebSocket = (brokerURL: string): WebSocketHookReturn => {
         }
 
         try {
-            const subscription = clientRef.current.subscribe(destination, callback);
+            // Wrap callback with debug logging
+            const wrappedCallback = (message: IMessage) => {
+                console.log(`🎯 [useWebSocket] Message received on ${destination}:`, message);
+                callback(message);
+            };
+
+            const subscription = clientRef.current.subscribe(destination, wrappedCallback);
             subscriptionsRef.current.push(subscription);
             console.log(`📡 Subscribed to: ${destination}`);
+            console.log(`📡 Subscription ID: ${subscription.id}`);
             return subscription;
         } catch (err) {
             console.error(`❌ Subscription failed for ${destination}:`, err);
