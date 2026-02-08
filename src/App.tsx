@@ -24,10 +24,8 @@ function App() {
           <Route path="/signup" element={<UserSignup />} />
           <Route path="/drive" element={<DriverLanding />} />
           <Route path="/driver-signup" element={<DriverSignup />} />
-          <Route path="/driver-dashboard" element={<DriverDashboard />} />
           <Route path="/driver-history" element={<DriverHistory />} />
           <Route path="/driver-earnings" element={<DriverEarnings />} />
-          <Route path="/ride-request-page" element={<RideRequestPage />} />
 
 
           {/* RIDER Protected Routes */}
