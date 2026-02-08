@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Container, Card, Form, Button, Alert, Row, Col, Modal } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import { FaArrowRight, FaCheckCircle, FaCar, FaIdCard, FaMapMarkerAlt, FaMobileAlt } from 'react-icons/fa'
+import { FaArrowRight, FaCheckCircle, FaCar, FaIdCard, FaEnvelope, FaLock } from 'react-icons/fa'
 import Navbar from '../../components/Navbar'
+import { authService } from '../../services/authService'
 
 const DriverSignup = () => {
     const navigate = useNavigate()
@@ -12,33 +13,22 @@ const DriverSignup = () => {
     const [showSuccess, setShowSuccess] = useState(false)
 
     // Form Data State
-    const [mobile, setMobile] = useState('')
-    const [name, setName] = useState('')
-    const [nic, setNic] = useState('')
-    const [city, setCity] = useState('')
+    // Form Data State
+    const [email, setEmail] = useState('')
+    const [username, setUsername] = useState('')
+    const [password, setPassword] = useState('')
+    const [registrationNumber, setRegistrationNumber] = useState('')
 
     // --- API GATEWAY SPACES ---
     // These functions act as placeholders/gateways for backend interaction
 
-    const verifyMobileNumber = async (number: string) => {
-        // API CALL PLACEHOLDER: Verify if number exists
-        // await api.post('/drivers/verify-mobile', { mobile: number })
-        console.log(`[API Gateway] Verifying mobile: ${number}`)
-
-        // Mock validation for now
-        if (number === '0771234567') { // Mock used number
-            throw new Error('This mobile number is already registered.')
-        }
+    const verifyEmail = async (email: string) => {
+        // API CALL PLACEHOLDER: Verify if email exists
+        console.log(`[API Gateway] Verifying email: ${email}`)
         return true
     }
 
-    const submitDriverApplication = async (data: any) => {
-        // API CALL PLACEHOLDER: Submit final application
-        // await api.post('/drivers/register', data)
-        console.log(`[API Gateway] Submitting application:`, data)
 
-        return new Promise((resolve) => setTimeout(resolve, 1500))
-    }
 
     // --- HANDLERS ---
 
@@ -47,14 +37,16 @@ const DriverSignup = () => {
         setError('')
 
         // Basic validation
-        if (!mobile || mobile.length < 10) {
-            setError('Please enter a valid mobile number.')
+        // Email Regex Validation
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+        if (!email || !emailRegex.test(email)) {
+            setError('Please enter a valid email address.')
             return
         }
 
         setLoading(true)
         try {
-            await verifyMobileNumber(mobile)
+            await verifyEmail(email)
             setStep(2)
         } catch (err: any) {
             setError(err.message || 'Verification failed')
@@ -65,7 +57,7 @@ const DriverSignup = () => {
 
     const handleStep2Submit = (e: React.FormEvent) => {
         e.preventDefault()
-        if (!name || !nic) {
+        if (!username || !password) {
             setError('Please fill in all details.')
             return
         }
@@ -75,14 +67,20 @@ const DriverSignup = () => {
 
     const handleStep3Submit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!city) {
-            setError('Please enter your city.')
+        if (!registrationNumber) {
+            setError('Please enter your vehicle registration number.')
             return
         }
 
         setLoading(true)
         try {
-            await submitDriverApplication({ mobile, name, nic, city })
+            // Real API Call using authService
+            await authService.signup(username, email, password, 'DRIVER', {
+                vehicleType: 'Car',
+                model: 'ThreeWheeler',
+                seatCount: 3,
+                registrationNumber: registrationNumber
+            })
             setShowSuccess(true)
         } catch (err: any) {
             setError('Registration failed. Please try again.')
@@ -148,21 +146,21 @@ const DriverSignup = () => {
                                         transition: 'transform 0.5s ease-in-out'
                                     }}
                                 >
-                                    {/* STEP 1: MOBILE */}
+                                    {/* STEP 1: EMAIL */}
                                     <div className="w-100 p-4 d-flex flex-column justify-content-center">
-                                        <h4 className="fw-bold mb-4 text-center text-white">Let's start with your number</h4>
+                                        <h4 className="fw-bold mb-4 text-center text-white">Let's start with your email</h4>
                                         <Form onSubmit={handleStep1Submit}>
                                             <Form.Group className="mb-4">
-                                                <Form.Label className="text-white-50">Mobile Number</Form.Label>
+                                                <Form.Label className="text-white-50">Email Address</Form.Label>
                                                 <div className="input-group">
                                                     <span className="input-group-text bg-viago-dark border-viago-gray text-white-50">
-                                                        <FaMobileAlt />
+                                                        <FaEnvelope />
                                                     </span>
                                                     <Form.Control
-                                                        type="tel"
-                                                        placeholder="077 123 4567"
-                                                        value={mobile}
-                                                        onChange={(e) => setMobile(e.target.value)}
+                                                        type="email"
+                                                        placeholder="name@example.com"
+                                                        value={email}
+                                                        onChange={(e) => setEmail(e.target.value)}
                                                         className="form-control-viago border-start-0"
                                                         autoFocus
                                                     />
@@ -179,31 +177,31 @@ const DriverSignup = () => {
                                         <h4 className="fw-bold mb-4 text-center text-white">Tell us about yourself</h4>
                                         <Form onSubmit={handleStep2Submit}>
                                             <Form.Group className="mb-3">
-                                                <Form.Label className="text-white-50">Full Name</Form.Label>
+                                                <Form.Label className="text-white-50">Username</Form.Label>
                                                 <div className="input-group">
                                                     <span className="input-group-text bg-viago-dark border-viago-gray text-white-50">
                                                         <FaCar />
                                                     </span>
                                                     <Form.Control
                                                         type="text"
-                                                        placeholder="Your Name"
-                                                        value={name}
-                                                        onChange={(e) => setName(e.target.value)}
+                                                        placeholder="Your Username"
+                                                        value={username}
+                                                        onChange={(e) => setUsername(e.target.value)}
                                                         className="form-control-viago border-start-0"
                                                     />
                                                 </div>
                                             </Form.Group>
                                             <Form.Group className="mb-4">
-                                                <Form.Label className="text-white-50">NIC Number</Form.Label>
+                                                <Form.Label className="text-white-50">Password</Form.Label>
                                                 <div className="input-group">
                                                     <span className="input-group-text bg-viago-dark border-viago-gray text-white-50">
-                                                        <FaIdCard />
+                                                        <FaLock />
                                                     </span>
                                                     <Form.Control
-                                                        type="text"
-                                                        placeholder="National Identity Card"
-                                                        value={nic}
-                                                        onChange={(e) => setNic(e.target.value)}
+                                                        type="password"
+                                                        placeholder="********"
+                                                        value={password}
+                                                        onChange={(e) => setPassword(e.target.value)}
                                                         className="form-control-viago border-start-0"
                                                     />
                                                 </div>
@@ -219,21 +217,21 @@ const DriverSignup = () => {
                                         </Form>
                                     </div>
 
-                                    {/* STEP 3: CITY */}
+                                    {/* STEP 3: VEHICLE */}
                                     <div className="w-100 p-4 d-flex flex-column justify-content-center">
-                                        <h4 className="fw-bold mb-4 text-center ">Where will you drive?</h4>
+                                        <h4 className="fw-bold mb-4 text-center ">Connect your vehicle</h4>
                                         <Form onSubmit={handleStep3Submit}>
                                             <Form.Group className="mb-4">
-                                                <Form.Label className="text-white-50">Service City</Form.Label>
+                                                <Form.Label className="text-white-50">Registration Number</Form.Label>
                                                 <div className="input-group">
                                                     <span className="input-group-text bg-viago-dark border-viago-gray text-white-50">
-                                                        <FaMapMarkerAlt />
+                                                        <FaIdCard />
                                                     </span>
                                                     <Form.Control
                                                         type="text"
-                                                        placeholder="e.g. Colombo, Kandy"
-                                                        value={city}
-                                                        onChange={(e) => setCity(e.target.value)}
+                                                        placeholder="ABC-1234"
+                                                        value={registrationNumber}
+                                                        onChange={(e) => setRegistrationNumber(e.target.value)}
                                                         className="form-control-viago border-start-0"
                                                     />
                                                 </div>
@@ -266,7 +264,7 @@ const DriverSignup = () => {
                         You have successfully joined the ViaGO drivers community.
                     </p>
                     <Button
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/login')}
                         className="btn-viago-primary px-5 py-3 fw-bold fs-5 rounded-pill"
                     >
                         Let's go First ride

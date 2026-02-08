@@ -48,14 +48,16 @@ export const authService = {
         username: string,
         email: string,
         password: string,
-        role: 'RIDER' | 'DRIVER' = 'RIDER'
+        role: 'RIDER' | 'DRIVER' = 'RIDER',
+        vehicle?: VehicleDTO
     ): Promise<AuthResponse> => {
         try {
             const requestBody: SignupRequest = {
                 username,
                 email,
                 password,
-                role
+                role,
+                vehicle
             }
 
             const response = await fetch(`${API_BASE_URL}/signup`, {
