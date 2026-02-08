@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Container, Row, Col, Card, Button, Modal, Badge, Spinner, Alert } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { FaCar, FaHistory, FaWallet, FaSignOutAlt, FaMapMarkerAlt, FaBars, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
+import { FaCar, FaHistory, FaWallet, FaSignOutAlt, FaMapMarkerAlt, FaBars, FaTimes, FaCheckCircle, FaTimesCircle, FaUserCircle } from 'react-icons/fa'
 import { useWebSocket } from '../../hooks/useWebSocket'
 import { TEST_CONFIG } from '../../config/testConfig'
 
@@ -29,7 +29,7 @@ interface RideOffer {
 
 const DriverDashboard = () => {
     const navigate = useNavigate()
-    const { user, logout } = useAuth()
+    const { logout } = useAuth()
     const [activeTab, setActiveTab] = useState('dashboard')
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -295,9 +295,14 @@ const DriverDashboard = () => {
 
                         {/* Desktop Menu */}
                         <div className="d-none d-md-flex align-items-center gap-3">
-                            <span className="text-white small">
-                                {user?.username}
-                            </span>
+                            {/* Driver Profile Pill */}
+                            <div className="d-flex align-items-center gap-2 px-3 py-1 rounded-pill"
+                                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                                <span className="fw-semibold text-white d-none d-sm-block">
+                                    Hi, {driverData.name}
+                                </span>
+                                <FaUserCircle size={24} className="text-white" />
+                            </div>
                             <Button
                                 onClick={handleLogout}
                                 size="sm"
@@ -333,7 +338,7 @@ const DriverDashboard = () => {
                     {/* Mobile Menu */}
                     {mobileMenuOpen && (
                         <div className="d-md-none pb-3">
-                            <div className="text-white small mb-2">Welcome, {user?.username}</div>
+                            <div className="text-white small mb-2">Welcome, {driverData.name}</div>
                             <Button
                                 onClick={handleLogout}
                                 size="sm"
