@@ -6,6 +6,17 @@ import { FaCar, FaHistory, FaWallet, FaSignOutAlt, FaMapMarkerAlt, FaBars, FaTim
 import { useWebSocket } from '../../hooks/useWebSocket'
 import { TEST_CONFIG } from '../../config/testConfig'
 
+// Helper function to get driver ID from localStorage for testing
+const getTestDriverId = (): number => {
+    const storedId = localStorage.getItem('test_driver_id')
+    return storedId ? parseInt(storedId) : TEST_CONFIG.DRIVER.id
+}
+
+// Helper function to get driver data by ID
+const getDriverData = (driverId: number) => {
+    return TEST_CONFIG.DRIVERS.find(d => d.id === driverId) || TEST_CONFIG.DRIVER
+}
+
 // TypeScript interfaces
 interface RideOffer {
     rideId: number
@@ -22,6 +33,12 @@ const DriverDashboard = () => {
     const [activeTab, setActiveTab] = useState('dashboard')
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+    // Get driver ID from localStorage (for multi-driver testing)
+    const driverId = getTestDriverId()
+    const driverData = getDriverData(driverId)
+
+    console.log('🚗 Driver Dashboard initialized for:', driverData.name, '(ID:', driverId, ')')
+
     // WebSocket connection
     const { isConnected, error: wsError, subscribe, publish } = useWebSocket(TEST_CONFIG.WEBSOCKET.url)
 
@@ -31,81 +48,164 @@ const DriverDashboard = () => {
 
     // Ride offer state
     const [currentOffer, setCurrentOffer] = useState<RideOffer | null>(null)
+    const currentOfferRef = useRef<RideOffer | null>(null) // Ref to avoid closure issues
     const [showOfferModal, setShowOfferModal] = useState(false)
+
+    // Accepted ride state
+    const [acceptedRide, setAcceptedRide] = useState<RideOffer | null>(null)
+    const [rideStatus, setRideStatus] = useState<'IDLE' | 'ACCEPTED' | 'PICKED_UP'>('IDLE')
 
     const handleLogout = () => {
         logout()
         navigate('/login')
     }
 
-    // Subscribe to driver offers when connected
+    // Subscribe to driver offers ONLY when driver is online
     useEffect(() => {
-        if (isConnected) {
-            console.log('🔌 Driver WebSocket connected, subscribing to offers...');
-            // Use topic-based subscription instead of user queue
-            const driverId = TEST_CONFIG.DRIVER.id;
+        if (isConnected && isOnline) {
+            console.log(`🔌 Driver ${driverId} (${driverData.name}) is ONLINE - subscribing to offers...`);
+
             const subscription = subscribe(`/topic/driver-offers/${driverId}`, (message) => {
-                console.log('📨 RAW MESSAGE RECEIVED:', message);
-                console.log('📨 MESSAGE BODY:', message.body);
+                console.log(`📨 [Driver ${driverId}] RAW MESSAGE RECEIVED:`, message);
+                console.log(`📨 [Driver ${driverId}] MESSAGE BODY:`, message.body);
                 try {
                     const offer: RideOffer = JSON.parse(message.body)
-                    console.log('🚗 Parsed ride offer:', offer)
+                    console.log(`🚗 [Driver ${driverId}] Parsed ride offer:`, offer)
+                    currentOfferRef.current = offer // Store in ref
                     setCurrentOffer(offer)
                     setShowOfferModal(true)
                 } catch (err) {
-                    console.error('❌ Error parsing ride offer:', err)
-                    console.error('❌ Message body was:', message.body)
+                    console.error(`❌ [Driver ${driverId}] Error parsing ride offer:`, err)
+                    console.error(`❌ [Driver ${driverId}] Message body was:`, message.body)
                 }
             })
 
             if (subscription) {
-                console.log(`✅ Successfully subscribed to /topic/driver-offers/${driverId}`);
+                console.log(`✅ [Driver ${driverId}] Successfully subscribed to /topic/driver-offers/${driverId}`);
             } else {
-                console.error(`❌ Failed to subscribe to /topic/driver-offers/${driverId}`);
+                console.error(`❌ [Driver ${driverId}] Failed to subscribe to /topic/driver-offers/${driverId}`);
             }
 
             return () => {
-                console.log('🔌 Unsubscribing from driver offers');
+                console.log(`🔌 [Driver ${driverId}] Unsubscribing from driver offers`);
                 subscription?.unsubscribe()
             }
+        } else if (isConnected && !isOnline) {
+            console.log(`⚠️ [Driver ${driverId}] Driver is OFFLINE - not subscribing to offers`);
         } else {
-            console.log('⚠️ WebSocket not connected, cannot subscribe');
+            console.log(`⚠️ [Driver ${driverId}] WebSocket not connected`);
         }
-    }, [isConnected, subscribe])
+    }, [isConnected, isOnline, subscribe, driverId, driverData.name])
+
+    // Subscribe to driver notifications
+    useEffect(() => {
+        if (isConnected) {
+            console.log(`🔌 [Driver ${driverId}] Subscribing to /topic/driver-notify/${driverId}`);
+
+            const subscription = subscribe(`/topic/driver-notify/${driverId}`, (message) => {
+                console.log(`📨 [Driver ${driverId}] DRIVER NOTIFICATION:`, message.body);
+
+                if (message.body === 'SUCCESS') {
+                    console.log(`✅ [Driver ${driverId}] Ride accepted successfully!`);
+                    // Use ref to get the current offer (avoids closure issue)
+                    const offer = currentOfferRef.current;
+                    console.log(`📦 [Driver ${driverId}] Current offer from ref:`, offer);
+                    if (offer) {
+                        setAcceptedRide(offer);
+                        setRideStatus('ACCEPTED');
+                        setCurrentOffer(null);
+                        currentOfferRef.current = null;
+                    } else {
+                        console.warn(`⚠️ [Driver ${driverId}] No current offer in ref when SUCCESS received`);
+                    }
+                } else if (message.body === 'RIDE_TAKEN') {
+                    console.log(`❌ [Driver ${driverId}] Ride was already taken`);
+                    alert('This ride was already accepted by another driver');
+                    setShowOfferModal(false);
+                    setCurrentOffer(null);
+                    currentOfferRef.current = null;
+                }
+            });
+
+            if (subscription) {
+                console.log(`✅ [Driver ${driverId}] Successfully subscribed to /topic/driver-notify/${driverId}`);
+            }
+
+            return () => {
+                subscription?.unsubscribe();
+            };
+        }
+    }, [isConnected, subscribe, driverId]) // Removed currentOffer from dependencies
 
     // Handle going online/offline
     const toggleOnlineStatus = () => {
         if (isOnline) {
             // Going offline
+            console.log(`📴 [Driver ${driverId}] Going offline...`)
             setIsOnline(false)
             if (locationIntervalRef.current) {
                 clearInterval(locationIntervalRef.current)
                 locationIntervalRef.current = null
             }
-            console.log('📴 Driver went offline')
+            console.log(`📴 [Driver ${driverId}] Driver went offline`)
         } else {
-            // Going online
+            // Going online - DON'T start location broadcast yet!
+            // The useEffect will handle starting location broadcast after subscription is ready
+            console.log(`✅ [Driver ${driverId}] Going online - waiting for subscription...`)
             setIsOnline(true)
+            // Location broadcasting will start in useEffect after subscription is confirmed
+        }
+    }
 
-            // Send location updates every 5 seconds
-            locationIntervalRef.current = setInterval(() => {
-                // Use hardcoded driver location from test config with small random variations
-                const baseLat = TEST_CONFIG.DRIVER.location.lat
-                const baseLng = TEST_CONFIG.DRIVER.location.lng
-                const randomOffset = () => (Math.random() - 0.5) * 0.005 // ~250m radius
+    // Start/stop location broadcasting based on online status and subscription readiness
+    useEffect(() => {
+        if (isOnline && isConnected) {
+            // Driver is online and WebSocket is connected
+            // Wait a brief moment to ensure subscription is established
+            const startBroadcastTimer = setTimeout(() => {
+                console.log(`📡 [Driver ${driverId}] Starting location broadcast...`)
 
-                const locationUpdate = {
-                    driverId: TEST_CONFIG.DRIVER.id,
+                // Send initial location immediately
+                const baseLat = driverData.location.lat
+                const baseLng = driverData.location.lng
+                const randomOffset = () => (Math.random() - 0.5) * 0.005
+
+                const initialLocation = {
+                    driverId: driverId,
                     lat: baseLat + randomOffset(),
                     lng: baseLng + randomOffset()
                 }
 
-                publish('/app/driver-update', locationUpdate)
-            }, TEST_CONFIG.LOCATION_UPDATE_INTERVAL)
+                console.log(`📍 [Driver ${driverId}] Sending initial location:`, initialLocation)
+                publish('/app/driver-update', initialLocation)
 
-            console.log('✅ Driver went online')
+                // Then start interval for continuous updates
+                locationIntervalRef.current = setInterval(() => {
+                    const locationUpdate = {
+                        driverId: driverId,
+                        lat: baseLat + randomOffset(),
+                        lng: baseLng + randomOffset()
+                    }
+                    publish('/app/driver-update', locationUpdate)
+                }, TEST_CONFIG.LOCATION_UPDATE_INTERVAL)
+
+                console.log(`✅ [Driver ${driverId}] Location broadcasting started`)
+            }, 500) // 500ms delay to ensure subscription is ready
+
+            return () => {
+                clearTimeout(startBroadcastTimer)
+                if (locationIntervalRef.current) {
+                    clearInterval(locationIntervalRef.current)
+                    locationIntervalRef.current = null
+                }
+            }
+        } else if (!isOnline && locationIntervalRef.current) {
+            // Driver went offline, stop broadcasting
+            clearInterval(locationIntervalRef.current)
+            locationIntervalRef.current = null
+            console.log(`🚫 [Driver ${driverId}] Location broadcasting stopped`)
         }
-    }
+    }, [isOnline, isConnected, driverId, driverData.location.lat, driverData.location.lng, publish])
 
     // Cleanup interval on unmount
     useEffect(() => {
@@ -122,21 +222,60 @@ const DriverDashboard = () => {
 
         const acceptPayload = {
             rideId: currentOffer.rideId,
-            driverId: TEST_CONFIG.DRIVER.id,
+            driverId: driverId,
             status: 'ACCEPTED'
         }
 
+        console.log(`🚀 [Driver ${driverId} - ${driverData.name}] ACCEPTING RIDE:`, acceptPayload)
+        console.log(`🚀 [Driver ${driverId}] Current offer:`, currentOffer)
+
         publish('/app/accept-ride', acceptPayload)
         setShowOfferModal(false)
-        setCurrentOffer(null)
-        console.log('✅ Ride accepted:', acceptPayload)
+        // Don't clear currentOffer here - let the SUCCESS notification handle it
+        console.log(`✅ [Driver ${driverId} - ${driverData.name}] Ride acceptance sent to backend, waiting for confirmation`)
     }
 
     // Handle declining a ride
     const handleDeclineRide = () => {
         setShowOfferModal(false)
         setCurrentOffer(null)
+        currentOfferRef.current = null
         console.log('❌ Ride declined')
+    }
+
+    // Handle starting trip (passenger picked up)
+    const handleStartTrip = () => {
+        if (!acceptedRide) return
+
+        const tripStartPayload = {
+            rideId: acceptedRide.rideId,
+            driverId: driverId,
+            status: 'TRIP_STARTED'
+        }
+
+        publish('/app/trip-started', tripStartPayload)
+        setRideStatus('PICKED_UP')
+        console.log('🚗 Trip started:', tripStartPayload)
+    }
+
+    // Handle ending trip (reached destination)
+    const handleEndTrip = () => {
+        if (!acceptedRide) return
+
+        const tripEndPayload = {
+            rideId: acceptedRide.rideId,
+            driverId: driverId,
+            status: 'TRIP_ENDED'
+        }
+
+        publish('/app/trip-ended', tripEndPayload)
+        console.log('🏁 Trip ended:', tripEndPayload)
+
+        // Clear accepted ride after a short delay
+        setTimeout(() => {
+            setAcceptedRide(null)
+            setRideStatus('IDLE')
+        }, 2000)
     }
 
     return (
@@ -457,6 +596,112 @@ const DriverDashboard = () => {
                             </Card.Body>
                         </Card>
                     </Col>
+
+                    {/* Active Ride Panel - Shows when driver has accepted a ride */}
+                    {acceptedRide && (
+                        <Col xs={12}>
+                            <Card className="border-0 shadow-lg" style={{
+                                borderLeft: '4px solid #10b981',
+                                backgroundColor: '#f0fdf4'
+                            }}>
+                                <Card.Body className="p-4">
+                                    <div className="d-flex justify-content-between align-items-center mb-4">
+                                        <div>
+                                            <h4 className="mb-1 fw-bold text-success">Active Ride</h4>
+                                            <Badge bg={rideStatus === 'PICKED_UP' ? 'primary' : 'success'} className="px-3 py-2">
+                                                {rideStatus === 'PICKED_UP' ? 'Trip In Progress' : 'Heading to Pickup'}
+                                            </Badge>
+                                        </div>
+                                        <div className="text-end">
+                                            <small className="text-muted d-block">FARE</small>
+                                            <h3 className="mb-0 text-success fw-bold">LKR {acceptedRide.price}</h3>
+                                        </div>
+                                    </div>
+
+                                    {/* Passenger Info */}
+                                    <div className="mb-4 p-3 bg-white rounded-3 border">
+                                        <small className="text-muted d-block mb-1">PASSENGER</small>
+                                        <h5 className="mb-0 fw-bold">{acceptedRide.riderName}</h5>
+                                    </div>
+
+                                    {/* Route Info */}
+                                    <div className="mb-4">
+                                        <div className="d-flex align-items-start gap-3 mb-3 p-3 bg-white rounded-3 border">
+                                            <div className="bg-success rounded-circle p-2 mt-1">
+                                                <FaMapMarkerAlt className="text-white" size={16} />
+                                            </div>
+                                            <div className="flex-grow-1">
+                                                <small className="text-muted d-block">PICKUP LOCATION</small>
+                                                <strong>{acceptedRide.pickupAddress}</strong>
+                                            </div>
+                                        </div>
+                                        <div className="d-flex align-items-start gap-3 p-3 bg-white rounded-3 border">
+                                            <div className="bg-danger rounded-circle p-2 mt-1">
+                                                <FaMapMarkerAlt className="text-white" size={16} />
+                                            </div>
+                                            <div className="flex-grow-1">
+                                                <small className="text-muted d-block">DROP-OFF LOCATION</small>
+                                                <strong>{acceptedRide.dropAddress}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Button */}
+                                    {rideStatus === 'ACCEPTED' && (
+                                        <Button
+                                            onClick={handleStartTrip}
+                                            className="w-100 py-3 fw-semibold border-0"
+                                            style={{
+                                                backgroundColor: '#10b981',
+                                                color: '#000',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#059669'
+                                                e.currentTarget.style.transform = 'scale(1.02)'
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#10b981'
+                                                e.currentTarget.style.transform = 'scale(1)'
+                                            }}
+                                        >
+                                            <FaCheckCircle className="me-2" />
+                                            Picked Up - Start Trip
+                                        </Button>
+                                    )}
+
+                                    {rideStatus === 'PICKED_UP' && (
+                                        <>
+                                            <Alert variant="info" className="mb-3">
+                                                <FaCar className="me-2" />
+                                                Trip in progress. Navigate to drop-off location.
+                                            </Alert>
+                                            <Button
+                                                onClick={handleEndTrip}
+                                                className="w-100 py-3 fw-semibold border-0"
+                                                style={{
+                                                    backgroundColor: '#dc3545',
+                                                    color: '#fff',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#bb2d3b'
+                                                    e.currentTarget.style.transform = 'scale(1.02)'
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#dc3545'
+                                                    e.currentTarget.style.transform = 'scale(1)'
+                                                }}
+                                            >
+                                                <FaCheckCircle className="me-2" />
+                                                End Trip
+                                            </Button>
+                                        </>
+                                    )}
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    )}
 
                     {/* Ride Offer Modal */}
                     <Modal show={showOfferModal} onHide={handleDeclineRide} centered size="lg">
