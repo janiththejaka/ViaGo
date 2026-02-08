@@ -4,7 +4,8 @@ import { LoadScript } from '@react-google-maps/api';
 import RideMap from '../components/RideMap';
 import BookingPanel from '../components/BookingPanel';
 import TopNavbar from '../components/TopNavbar';
-import { authService } from '../services/authService';
+import { useWebSocket } from '../hooks/useWebSocket';
+import { TEST_CONFIG } from '../config/testConfig';
 
 const libraries: ("places")[] = ["places"];
 
@@ -12,8 +13,14 @@ export default function RideRequestPage() {
     // --- NAVIGATION ---
     const navigate = useNavigate();
 
-    // --- USER DATA (Fetch from backend/localStorage) ---
-    const [user, setUser] = useState<{ name: string; image: string }>({ name: "Guest", image: "" });
+    // --- USER DATA (Hardcoded for testing) ---
+    const [user] = useState<{ name: string; image: string }>({
+        name: TEST_CONFIG.RIDER.name,
+        image: ""
+    });
+
+    // WebSocket connection
+    const { isConnected, subscribe, publish } = useWebSocket(TEST_CONFIG.WEBSOCKET.url);
 
     // State Management
     const [pickup, setPickup] = useState<{ lat: number; lng: number } | null>(null);
@@ -28,19 +35,22 @@ export default function RideRequestPage() {
     // "Select on Map" Mode State
     const [selectingMode, setSelectingMode] = useState<'pickup' | 'drop' | null>(null);
 
-    // Effect: Fetch user data from localStorage on page load
+    // Effect: Set default pickup location from test config
     useEffect(() => {
-        const userData = authService.getCurrentUser();
-        if (userData) {
-            setUser({
-                name: userData.username,
-                image: "" // Can be extended to fetch profile image from backend
-            });
-        } else {
-            // If no user is logged in, redirect to login page
-            navigate('/login');
-        }
-    }, [navigate]);
+        // Set default pickup location near driver for testing
+        setPickup({
+            lat: TEST_CONFIG.RIDER.defaultPickup.lat,
+            lng: TEST_CONFIG.RIDER.defaultPickup.lng
+        });
+        setPickupText(TEST_CONFIG.RIDER.defaultPickup.address);
+
+        // Optionally set default drop location
+        // setDrop({
+        //     lat: TEST_CONFIG.RIDER.defaultDrop.lat,
+        //     lng: TEST_CONFIG.RIDER.defaultDrop.lng
+        // });
+        // setDropText(TEST_CONFIG.RIDER.defaultDrop.address);
+    }, []);
 
     // Handler: Back Button Click කළාම Home එකට යනවා
     const handleBackClick = () => {
@@ -151,7 +161,12 @@ export default function RideRequestPage() {
                     onSelectOnMap={setSelectingMode}
                     calculateRoute={calculateRoute}
                     tripDetails={tripDetails}
+                    pickup={pickup}
+                    drop={drop}
                     loading={loading}
+                    isConnected={isConnected}
+                    subscribe={subscribe}
+                    publish={publish}
                 />
 
                 {/* 4. Map Selection Hint Banner */}
