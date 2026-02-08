@@ -43,7 +43,7 @@ export default function BookingPanel({
     const [activeField, setActiveField] = useState<'pickup' | 'drop'>('pickup');
 
     // Ride status state
-    const [rideStatus, setRideStatus] = useState<'IDLE' | 'SEARCHING' | 'DRIVER_FOUND' | 'ACCEPTED'>('IDLE');
+    const [rideStatus, setRideStatus] = useState<'IDLE' | 'SEARCHING' | 'DRIVER_FOUND' | 'TRIP_STARTED' | 'TRIP_ENDED'>('IDLE');
     const [driverDetails, setDriverDetails] = useState<DriverDetails | null>(null);
 
     const pickupRef = useRef<google.maps.places.Autocomplete | null>(null);
@@ -70,9 +70,12 @@ export default function BookingPanel({
                         console.log('✅ Status: DRIVER_FOUND', statusUpdate.data);
                         setDriverDetails(statusUpdate.data);
                         setRideStatus('DRIVER_FOUND');
-                    } else if (statusUpdate.status === 'ACCEPTED') {
-                        console.log('✅ Status: ACCEPTED');
-                        setRideStatus('ACCEPTED');
+                    } else if (statusUpdate.status === 'TRIP_STARTED') {
+                        console.log('🚗 Status: TRIP_STARTED');
+                        setRideStatus('TRIP_STARTED');
+                    } else if (statusUpdate.status === 'TRIP_ENDED') {
+                        console.log('🏁 Status: TRIP_ENDED');
+                        setRideStatus('TRIP_ENDED');
                     }
                 } catch (err) {
                     console.error('❌ Error parsing ride status:', err);
@@ -362,6 +365,73 @@ export default function BookingPanel({
                             </Alert>
                         </div>
                     )}
+
+                    {/* TRIP_STARTED State */}
+                    {rideStatus === 'TRIP_STARTED' && driverDetails && (
+                        <div className="mt-4">
+                            <Alert variant="primary" className="mb-4">
+                                <strong>🚗 Trip Started!</strong>
+                                <p className="mb-0 mt-2 small">Your driver has picked you up. Enjoy your ride!</p>
+                            </Alert>
+
+                            <Card className="border-0 bg-light mb-4">
+                                <Card.Body>
+                                    <div className="d-flex align-items-center gap-3 mb-3">
+                                        <div className="bg-primary rounded-circle p-3 text-white">
+                                            <FaCar size={24} />
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h5 className="mb-0 fw-bold">{driverDetails.name}</h5>
+                                            <small className="text-muted">{driverDetails.vehicleModel || driverDetails.vehicleNo}</small>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center p-3 bg-white rounded mb-2">
+                                        <span className="text-muted small">Vehicle Number</span>
+                                        <strong>{driverDetails.vehicleNo}</strong>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center p-3 bg-white rounded">
+                                        <span className="text-muted small">Phone</span>
+                                        <strong>{driverDetails.phone}</strong>
+                                    </div>
+                                </Card.Body>
+                            </Card>
+
+                            <Alert variant="info" className="small">
+                                <strong>En route to destination</strong>
+                            </Alert>
+                        </div>
+                    )}
+
+                    {/* TRIP_ENDED State */}
+                    {rideStatus === 'TRIP_ENDED' && (
+                        <div className="mt-4">
+                            <Alert variant="success" className="mb-4 text-center">
+                                <h4 className="mb-2">🏁 Trip Completed!</h4>
+                                <p className="mb-0">Thank you for riding with ViaGO</p>
+                            </Alert>
+
+                            {driverDetails && (
+                                <Card className="border-0 bg-light mb-4">
+                                    <Card.Body className="text-center">
+                                        <p className="text-muted mb-2">Your driver was</p>
+                                        <h5 className="fw-bold mb-1">{driverDetails.name}</h5>
+                                        <small className="text-muted">{driverDetails.vehicleNo}</small>
+                                    </Card.Body>
+                                </Card>
+                            )}
+
+                            <Button
+                                className="w-100 py-3 fw-bold rounded-pill"
+                                variant="dark"
+                                onClick={() => {
+                                    setRideStatus('IDLE');
+                                    setDriverDetails(null);
+                                }}
+                            >
+                                Book Another Ride
+                            </Button>
+                        </div>
+                    )}
                 </Card.Body>
             </Card>
 
@@ -448,6 +518,53 @@ export default function BookingPanel({
                         <strong>{driverDetails.phone}</strong>
                     </div>
                     <p className="text-center text-muted mt-3 mb-0">Your driver is on the way to pick you up!</p>
+                </div>
+            )}
+
+            {/* Mobile TRIP_STARTED State */}
+            {rideStatus === 'TRIP_STARTED' && driverDetails && (
+                <div className="d-md-none fixed-bottom bg-white p-4 rounded-top-4 shadow-lg" style={{ zIndex: 100 }}>
+                    <Alert variant="primary" className="mb-3 text-center">
+                        <strong>🚗 Trip Started!</strong>
+                        <p className="mb-0 mt-1 small">Driver has picked you up</p>
+                    </Alert>
+                    <div className="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3">
+                        <div className="bg-primary rounded-circle p-3 text-white">
+                            <FaCar size={24} />
+                        </div>
+                        <div className="flex-grow-1">
+                            <h5 className="mb-0 fw-bold">{driverDetails.name}</h5>
+                            <small className="text-muted">{driverDetails.vehicleModel || driverDetails.vehicleNo}</small>
+                        </div>
+                    </div>
+                    <p className="text-center text-muted mb-0">En route to destination</p>
+                </div>
+            )}
+
+            {/* Mobile TRIP_ENDED State */}
+            {rideStatus === 'TRIP_ENDED' && (
+                <div className="d-md-none fixed-bottom bg-white p-4 rounded-top-4 shadow-lg" style={{ zIndex: 100 }}>
+                    <Alert variant="success" className="mb-3 text-center">
+                        <h5 className="mb-1">🏁 Trip Completed!</h5>
+                        <small>Thank you for riding with ViaGO</small>
+                    </Alert>
+                    {driverDetails && (
+                        <div className="text-center mb-3 p-3 bg-light rounded-3">
+                            <small className="text-muted d-block">Your driver was</small>
+                            <h6 className="fw-bold mb-0">{driverDetails.name}</h6>
+                            <small className="text-muted">{driverDetails.vehicleNo}</small>
+                        </div>
+                    )}
+                    <Button
+                        className="w-100 py-3 fw-bold"
+                        variant="dark"
+                        onClick={() => {
+                            setRideStatus('IDLE');
+                            setDriverDetails(null);
+                        }}
+                    >
+                        Book Another Ride
+                    </Button>
                 </div>
             )}
 
