@@ -76,7 +76,7 @@ const DriverSignup = () => {
         try {
             // Real API Call using authService
             await authService.signup(username, email, password, 'DRIVER', {
-                vehicleType: 'Car',
+                vehicleType: 'Tuk',
                 model: 'ThreeWheeler',
                 seatCount: 3,
                 registrationNumber: registrationNumber
@@ -264,7 +264,7 @@ const DriverSignup = () => {
                         You have successfully joined the ViaGO drivers community.
                     </p>
                     <Button
-                        onClick={() => navigate('/login')}
+                        onClick={() => navigate('/driver-dashboard')}
                         className="btn-viago-primary px-5 py-3 fw-bold fs-5 rounded-pill"
                     >
                         Let's go First ride
