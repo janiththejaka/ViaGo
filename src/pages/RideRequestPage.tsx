@@ -5,6 +5,7 @@ import RideMap from '../components/RideMap';
 import BookingPanel from '../components/BookingPanel';
 import TopNavbar from '../components/TopNavbar';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useAuth } from '../context/AuthContext';
 import { TEST_CONFIG } from '../config/testConfig';
 
 const libraries: ("places")[] = ["places"];
@@ -14,10 +15,12 @@ export default function RideRequestPage() {
     const navigate = useNavigate();
 
     // --- USER DATA (Hardcoded for testing) ---
-    const [user] = useState<{ name: string; image: string }>({
-        name: TEST_CONFIG.RIDER.name,
+    // --- USER DATA (From Auth Context) ---
+    const { user: authUser } = useAuth();
+    const user = {
+        name: authUser?.username || TEST_CONFIG.RIDER.name, // Fallback to test config if not logged in (or handle redirect)
         image: ""
-    });
+    };
 
     // WebSocket connection
     const { isConnected, subscribe, publish } = useWebSocket(TEST_CONFIG.WEBSOCKET.url);

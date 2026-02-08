@@ -29,13 +29,13 @@ interface RideOffer {
 
 const DriverDashboard = () => {
     const navigate = useNavigate()
-    const { logout } = useAuth()
+    const { user: authUser, logout } = useAuth()
     const [activeTab, setActiveTab] = useState('dashboard')
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     // Get driver ID from localStorage ONCE on mount (for multi-driver testing)
     // Use useState to prevent recalculation on every render
-    const [driverId] = useState(() => getTestDriverId())
+    const [driverId] = useState(() => authUser?.userId || getTestDriverId())
     const [driverData] = useState(() => getDriverData(driverId))
 
     console.log('🚗 Driver Dashboard initialized for:', driverData.name, '(ID:', driverId, ')')
@@ -299,7 +299,7 @@ const DriverDashboard = () => {
                             <div className="d-flex align-items-center gap-2 px-3 py-1 rounded-pill"
                                 style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
                                 <span className="fw-semibold text-white d-none d-sm-block">
-                                    Hi, {driverData.name}
+                                    Hi, {authUser?.username || driverData.name}
                                 </span>
                                 <FaUserCircle size={24} className="text-white" />
                             </div>
@@ -338,7 +338,7 @@ const DriverDashboard = () => {
                     {/* Mobile Menu */}
                     {mobileMenuOpen && (
                         <div className="d-md-none pb-3">
-                            <div className="text-white small mb-2">Welcome, {driverData.name}</div>
+                            <div className="text-white small mb-2">Welcome, {authUser?.username || driverData.name}</div>
                             <Button
                                 onClick={handleLogout}
                                 size="sm"
