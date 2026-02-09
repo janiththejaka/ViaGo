@@ -63,13 +63,32 @@ export default function BookingPanel({
                 try {
                     const statusUpdate = JSON.parse(message.body);
                     console.log('📨 Ride status update:', statusUpdate);
+                    console.log('🔑 Keys:', Object.keys(statusUpdate));
 
                     if (statusUpdate.status === 'SEARCHING') {
                         console.log('🔍 Status: SEARCHING');
                         setRideStatus('SEARCHING');
-                    } else if (statusUpdate.status === 'DRIVER_FOUND' && statusUpdate.data) {
-                        console.log('✅ Status: DRIVER_FOUND', statusUpdate.data);
-                        setDriverDetails(statusUpdate.data);
+                    } else if (statusUpdate.status === 'DRIVER_FOUND') {
+                        // Backend might send 'data', 'driver', or 'driverDetails'
+                        // Let's check what we actually got
+                        const driverData = statusUpdate.data || statusUpdate.driver || statusUpdate.driverDetails;
+
+                        console.log('✅ Status: DRIVER_FOUND');
+                        console.log('📦 Driver Data Raw:', driverData);
+
+                        if (driverData) {
+                            setDriverDetails(driverData);
+                        } else {
+                            console.warn('⚠️ DRIVER_FOUND received but no driver data! Using fallback.');
+                            setDriverDetails({
+                                id: 0,
+                                name: 'Driver (Details N/A)',
+                                phone: 'Check App',
+                                vehicleNo: 'Unknown',
+                                vehicleModel: 'Vehicle'
+                            });
+                        }
+                        // Always transition to DRIVER_FOUND state so the UI updates
                         setRideStatus('DRIVER_FOUND');
                     } else if (statusUpdate.status === 'TRIP_STARTED') {
                         console.log('🚗 Status: TRIP_STARTED');

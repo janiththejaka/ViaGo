@@ -38,7 +38,7 @@ interface UserData {
     enabled: boolean
 }
 
-const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:8080/auth'
+const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL || 'http://13.219.25.1:8080/auth'
 
 export const authService = {
     /**
