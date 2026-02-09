@@ -66,6 +66,7 @@ const DriverDashboard = () => {
 
     // Driver online/offline state
     const [isOnline, setIsOnline] = useState(false)
+    const [statusMessage, setStatusMessage] = useState('You are currently Offline')
     const locationIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
     // Ride offer state
@@ -75,7 +76,7 @@ const DriverDashboard = () => {
 
     // Accepted ride state
     const [acceptedRide, setAcceptedRide] = useState<RideOffer | null>(null)
-    const [rideStatus, setRideStatus] = useState<'IDLE' | 'ACCEPTED' | 'PICKED_UP'>('IDLE')
+    const [rideStatus, setRideStatus] = useState<'IDLE' | 'ACCEPTED' | 'PICKED_UP' | 'ON_TRIP'>('IDLE')
 
     const handleLogout = () => {
         logout()
@@ -85,96 +86,101 @@ const DriverDashboard = () => {
     // Subscribe to driver offers ONLY when driver is online
     useEffect(() => {
         if (isConnected && isOnline) {
-            console.log(`🔌 Driver ${driverId} (${driverData?.name}) is ONLINE - subscribing to offers...`);
+            console.log(`Driver ${driverId} (${driverData?.name}) is ONLINE - subscribing to offers...`);
 
             const subscription = subscribe(`/topic/driver-offers/${driverId}`, (message) => {
-                console.log(`📨 [Driver ${driverId}] RAW MESSAGE RECEIVED:`, message);
-                console.log(`📨 [Driver ${driverId}] MESSAGE BODY:`, message.body);
+                console.log(`[Driver ${driverId}] RAW MESSAGE RECEIVED:`, message);
+                console.log(`[Driver ${driverId}] MESSAGE BODY:`, message.body);
                 try {
                     const offer: RideOffer = JSON.parse(message.body)
-                    console.log(`🚗 [Driver ${driverId}] Parsed ride offer:`, offer)
+                    console.log(`[Driver ${driverId}] Parsed ride offer:`, offer)
                     currentOfferRef.current = offer // Store in ref
                     setCurrentOffer(offer)
                     setShowOfferModal(true)
                 } catch (err) {
-                    console.error(`❌ [Driver ${driverId}] Error parsing ride offer:`, err)
-                    console.error(`❌ [Driver ${driverId}] Message body was:`, message.body)
+                    console.error(`[Driver ${driverId}] Error parsing ride offer:`, err)
+                    console.error(`[Driver ${driverId}] Message body was:`, message.body)
                 }
             })
 
             if (subscription) {
-                console.log(`✅ [Driver ${driverId}] Successfully subscribed to /topic/driver-offers/${driverId}`);
+                console.log(`[Driver ${driverId}] Successfully subscribed to /topic/driver-offers/${driverId}`);
             } else {
-                console.error(`❌ [Driver ${driverId}] Failed to subscribe to /topic/driver-offers/${driverId}`);
+                console.error(`[Driver ${driverId}] Failed to subscribe to /topic/driver-offers/${driverId}`);
             }
 
             return () => {
-                console.log(`🔌 [Driver ${driverId}] Unsubscribing from driver offers`);
+                console.log(`[Driver ${driverId}] Unsubscribing from driver offers`);
                 subscription?.unsubscribe()
             }
         } else if (isConnected && !isOnline) {
-            console.log(`⚠️ [Driver ${driverId}] Driver is OFFLINE - not subscribing to offers`);
+            console.log(`[Driver ${driverId}] Driver is OFFLINE - not subscribing to offers`);
         } else {
-            console.log(`⚠️ [Driver ${driverId}] WebSocket not connected`);
+            console.log(`[Driver ${driverId}] WebSocket not connected`);
         }
     }, [isConnected, isOnline, subscribe, driverId, driverData?.name])
 
     // Subscribe to driver notifications
     useEffect(() => {
         if (isConnected) {
-            console.log(`🔌 [Driver ${driverId}] Subscribing to /topic/driver-notify/${driverId}`);
+            console.log(`[Driver ${driverId}] Subscribing to notifications...`);
+            const notifySub = subscribe(`/topic/driver-notify/${driverId}`, (message) => {
+                const msg = message.body;
+                console.log(`[Driver ${driverId}] Notification received:`, msg);
 
-            const subscription = subscribe(`/topic/driver-notify/${driverId}`, (message) => {
-                console.log(`📨 [Driver ${driverId}] DRIVER NOTIFICATION:`, message.body);
+                if (msg === "SUCCESS") {
+                    console.log(`[Driver ${driverId}] Ride Accepted Successfully!`);
 
-                if (message.body === 'SUCCESS') {
-                    console.log(`✅ [Driver ${driverId}] Ride accepted successfully!`);
-                    // Use ref to get the current offer (avoids closure issue)
-                    const offer = currentOfferRef.current;
-                    console.log(`📦 [Driver ${driverId}] Current offer from ref:`, offer);
-                    if (offer) {
-                        setAcceptedRide(offer);
-                        setRideStatus('ACCEPTED');
-                        setCurrentOffer(null);
-                        currentOfferRef.current = null;
+                    // IMPORTANT: Use the REF to get the latest offer data
+                    if (currentOfferRef.current) {
+                        console.log(`[Driver ${driverId}] Promoting offer to Accepted Ride:`, currentOfferRef.current);
+                        setAcceptedRide(currentOfferRef.current);
+                        setRideStatus('ON_TRIP');
+                        setCurrentOffer(null); // Clear the offer modal
+                        currentOfferRef.current = null; // Clear the ref
                     } else {
-                        console.warn(`⚠️ [Driver ${driverId}] No current offer in ref when SUCCESS received`);
+                        console.error(`[Driver ${driverId}] CRITICAL: Received SUCCESS but currentOfferRef is null!`);
+                        // Fallback: Try to use state if ref is somehow empty (unlikely but safe)
+                        if (currentOffer) {
+                            console.warn(`[Driver ${driverId}] Fallback: Using state currentOffer`);
+                            setAcceptedRide(currentOffer);
+                            setRideStatus('ON_TRIP');
+                            setCurrentOffer(null);
+                        }
                     }
-                } else if (message.body === 'RIDE_TAKEN') {
-                    console.log(`❌ [Driver ${driverId}] Ride was already taken`);
-                    alert('This ride was already accepted by another driver');
+                } else if (msg === "RIDE_TAKEN") {
+                    console.log(`[Driver ${driverId}] Ride already taken by another driver.`);
+                    alert("This ride has already been taken by another driver.");
                     setShowOfferModal(false);
                     setCurrentOffer(null);
                     currentOfferRef.current = null;
                 }
             });
 
-            if (subscription) {
-                console.log(`✅ [Driver ${driverId}] Successfully subscribed to /topic/driver-notify/${driverId}`);
-            }
-
             return () => {
-                subscription?.unsubscribe();
-            };
+                notifySub?.unsubscribe();
+            }
         }
-    }, [isConnected, subscribe, driverId]) // Removed currentOffer from dependencies
+    }, [isConnected, subscribe, driverId, currentOffer]); // Added currentOffer to deps just in case, though ref is better
 
     // Handle going online/offline
     const toggleOnlineStatus = () => {
         if (isOnline) {
             // Going offline
-            console.log(`📴 [Driver ${driverId}] Going offline...`)
+            console.log(`[Driver ${driverId}] Going offline...`)
             setIsOnline(false)
+            setStatusMessage('You are currently Offline')
             if (locationIntervalRef.current) {
                 clearInterval(locationIntervalRef.current)
                 locationIntervalRef.current = null
             }
-            console.log(`📴 [Driver ${driverId}] Driver went offline`)
+            console.log(`[Driver ${driverId}] Driver went offline`)
         } else {
             // Going online - DON'T start location broadcast yet!
             // The useEffect will handle starting location broadcast after subscription is ready
-            console.log(`✅ [Driver ${driverId}] Going online - waiting for subscription...`)
+            console.log(`[Driver ${driverId}] Going online - waiting for subscription...`)
             setIsOnline(true)
+            setStatusMessage('You are Online')
             // Location broadcasting will start in useEffect after subscription is confirmed
         }
     }
@@ -184,7 +190,7 @@ const DriverDashboard = () => {
 
     useEffect(() => {
         if (locationError) {
-            console.error('📍 GPS Error:', locationError);
+            console.error('GPS Error:', locationError);
         }
     }, [locationError]);
 
@@ -208,7 +214,7 @@ const DriverDashboard = () => {
     // Start/stop location broadcasting based on online status
     useEffect(() => {
         if (isOnline && isConnected) {
-            console.log(`📡 [Driver ${driverId}] Starting location broadcast...`)
+            console.log(`[Driver ${driverId}] Starting location broadcast...`)
 
             // Send initial location immediately if available
             if (latestLocationRef.current) {
@@ -217,7 +223,7 @@ const DriverDashboard = () => {
                     lat: latestLocationRef.current.lat,
                     lng: latestLocationRef.current.lng
                 }
-                console.log(`📍 [Driver ${driverId}] Sending initial location:`, initialLocation)
+                console.log(`[Driver ${driverId}] Sending initial location:`, initialLocation)
                 publish('/app/driver-update', initialLocation)
             }
 
@@ -233,11 +239,11 @@ const DriverDashboard = () => {
                 } else if (!isTracking && !latestLocationRef.current) {
                     // Fallback if no real location yet (optional: maybe send last known or default?)
                     // For now, doing nothing until GPS lock
-                    console.warn(`⚠️ [Driver ${driverId}] Waiting for GPS lock...`);
+                    console.warn(`[Driver ${driverId}] Waiting for GPS lock...`);
                 }
             }, 3000) // Update location every 3 seconds
 
-            console.log(`✅ [Driver ${driverId}] Location broadcasting started`)
+            console.log(`[Driver ${driverId}] Location broadcasting started`)
 
             return () => {
                 if (locationIntervalRef.current) {
@@ -249,7 +255,7 @@ const DriverDashboard = () => {
             // Driver went offline
             clearInterval(locationIntervalRef.current)
             locationIntervalRef.current = null
-            console.log(`🚫 [Driver ${driverId}] Location broadcasting stopped`)
+            console.log(`[Driver ${driverId}] Location broadcasting stopped`)
         }
     }, [isOnline, isConnected, driverId, publish, isTracking]);
 
@@ -272,13 +278,13 @@ const DriverDashboard = () => {
             status: 'ACCEPTED'
         }
 
-        console.log(`🚀 [Driver ${driverId} - ${driverData?.name}] ACCEPTING RIDE:`, acceptPayload)
-        console.log(`🚀 [Driver ${driverId}] Current offer:`, currentOffer)
+        console.log(`[Driver ${driverId} - ${driverData?.name}] ACCEPTING RIDE:`, acceptPayload)
+        console.log(`[Driver ${driverId}] Current offer:`, currentOffer)
 
         publish('/app/accept-ride', acceptPayload)
         setShowOfferModal(false)
         // Don't clear currentOffer here - let the SUCCESS notification handle it
-        console.log(`✅ [Driver ${driverId} - ${driverData?.name}] Ride acceptance sent to backend, waiting for confirmation`)
+        console.log(`[Driver ${driverId} - ${driverData?.name}] Ride acceptance sent to backend, waiting for confirmation`)
     }
 
     // Handle declining a ride
@@ -286,7 +292,7 @@ const DriverDashboard = () => {
         setShowOfferModal(false)
         setCurrentOffer(null)
         currentOfferRef.current = null
-        console.log('❌ Ride declined')
+        console.log('Ride declined')
     }
 
     // Handle starting trip (passenger picked up)
@@ -301,7 +307,7 @@ const DriverDashboard = () => {
 
         publish('/app/trip-started', tripStartPayload)
         setRideStatus('PICKED_UP')
-        console.log('🚗 Trip started:', tripStartPayload)
+        console.log('Trip started:', tripStartPayload)
     }
 
     // Handle ending trip (reached destination)
@@ -315,7 +321,7 @@ const DriverDashboard = () => {
         }
 
         publish('/app/trip-ended', tripEndPayload)
-        console.log('🏁 Trip ended:', tripEndPayload)
+        console.log('Trip ended:', tripEndPayload)
 
         // Clear accepted ride after a short delay
         setTimeout(() => {

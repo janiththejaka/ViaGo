@@ -32,25 +32,25 @@ export const useWebSocket = (brokerURL: string): WebSocketHookReturn => {
             },
 
             onConnect: () => {
-                console.log('✅ WebSocket Connected');
+                console.log('WebSocket Connected');
                 setIsConnected(true);
                 setError(null);
             },
 
             onDisconnect: () => {
-                console.log('❌ WebSocket Disconnected');
+                console.log('WebSocket Disconnected');
                 setIsConnected(false);
             },
 
             onStompError: (frame) => {
-                console.error('❌ STOMP Error:', frame.headers['message']);
-                console.error('❌ STOMP Error Frame:', frame);
+                console.error('STOMP Error:', frame.headers['message']);
+                console.error('STOMP Error Frame:', frame);
                 setError(frame.headers['message'] || 'STOMP connection error');
                 setIsConnected(false);
             },
 
             onWebSocketError: (event) => {
-                console.error('❌ WebSocket Error:', event);
+                console.error('WebSocket Error:', event);
                 setError('WebSocket connection failed. Is the backend running?');
                 setIsConnected(false);
             }
@@ -63,7 +63,7 @@ export const useWebSocket = (brokerURL: string): WebSocketHookReturn => {
 
         // Cleanup on unmount
         return () => {
-            console.log('🔌 Disconnecting WebSocket...');
+            console.log('Disconnecting WebSocket...');
 
             // Unsubscribe all subscriptions
             subscriptionsRef.current.forEach(sub => {
@@ -85,24 +85,24 @@ export const useWebSocket = (brokerURL: string): WebSocketHookReturn => {
     // Subscribe to a destination
     const subscribe = useCallback((destination: string, callback: (message: IMessage) => void): StompSubscription | null => {
         if (!clientRef.current || !isConnected) {
-            console.warn('⚠️ Cannot subscribe: WebSocket not connected');
+            console.warn('Cannot subscribe: WebSocket not connected');
             return null;
         }
 
         try {
             // Wrap callback with debug logging
             const wrappedCallback = (message: IMessage) => {
-                console.log(`🎯 [useWebSocket] Message received on ${destination}:`, message);
+                console.log(`[useWebSocket] Message received on ${destination}:`, message);
                 callback(message);
             };
 
             const subscription = clientRef.current.subscribe(destination, wrappedCallback);
             subscriptionsRef.current.push(subscription);
-            console.log(`📡 Subscribed to: ${destination}`);
-            console.log(`📡 Subscription ID: ${subscription.id}`);
+            console.log(`Subscribed to: ${destination}`);
+            console.log(`Subscription ID: ${subscription.id}`);
             return subscription;
         } catch (err) {
-            console.error(`❌ Subscription failed for ${destination}:`, err);
+            console.error(`Subscription failed for ${destination}:`, err);
             return null;
         }
     }, [isConnected]);
@@ -110,7 +110,7 @@ export const useWebSocket = (brokerURL: string): WebSocketHookReturn => {
     // Publish a message
     const publish = useCallback((destination: string, body: any) => {
         if (!clientRef.current || !isConnected) {
-            console.warn('⚠️ Cannot publish: WebSocket not connected');
+            console.warn('Cannot publish: WebSocket not connected');
             return;
         }
 
@@ -119,9 +119,9 @@ export const useWebSocket = (brokerURL: string): WebSocketHookReturn => {
                 destination,
                 body: JSON.stringify(body)
             });
-            console.log(`📤 Published to ${destination}:`, body);
+            console.log(`Published to ${destination}:`, body);
         } catch (err) {
-            console.error(`❌ Publish failed to ${destination}:`, err);
+            console.error(`Publish failed to ${destination}:`, err);
         }
     }, [isConnected]);
 

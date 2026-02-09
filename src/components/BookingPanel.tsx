@@ -54,32 +54,32 @@ export default function BookingPanel({
     useEffect(() => {
         if (isConnected && user?.userId) {
             const riderId = user.userId;
-            console.log(`🔌 Rider subscribing to /topic/ride-status/${riderId}`);
+            console.log('Rider subscribing to /topic/ride-status/' + riderId);
 
             const subscription = subscribe(`/topic/ride-status/${riderId}`, (message) => {
-                console.log('📨 RAW RIDER MESSAGE RECEIVED:', message);
-                console.log('📨 RIDER MESSAGE BODY:', message.body);
+                console.log('RAW RIDER MESSAGE RECEIVED:', message);
+                console.log('RIDER MESSAGE BODY:', message.body);
 
                 try {
                     const statusUpdate = JSON.parse(message.body);
-                    console.log('📨 Ride status update:', statusUpdate);
-                    console.log('🔑 Keys:', Object.keys(statusUpdate));
+                    console.log('Ride status update:', statusUpdate);
+                    console.log('Keys:', Object.keys(statusUpdate));
 
                     if (statusUpdate.status === 'SEARCHING') {
-                        console.log('🔍 Status: SEARCHING');
+                        console.log('Status: SEARCHING');
                         setRideStatus('SEARCHING');
                     } else if (statusUpdate.status === 'DRIVER_FOUND') {
                         // Backend might send 'data', 'driver', or 'driverDetails'
                         // Let's check what we actually got
                         const driverData = statusUpdate.data || statusUpdate.driver || statusUpdate.driverDetails;
 
-                        console.log('✅ Status: DRIVER_FOUND');
-                        console.log('📦 Driver Data Raw:', driverData);
+                        console.log('Status: DRIVER_FOUND');
+                        console.log('Driver Data Raw:', driverData);
 
                         if (driverData) {
                             setDriverDetails(driverData);
                         } else {
-                            console.warn('⚠️ DRIVER_FOUND received but no driver data! Using fallback.');
+                            console.warn('DRIVER_FOUND received but no driver data! Using fallback.');
                             setDriverDetails({
                                 id: 0,
                                 name: 'Driver (Details N/A)',
@@ -91,19 +91,19 @@ export default function BookingPanel({
                         // Always transition to DRIVER_FOUND state so the UI updates
                         setRideStatus('DRIVER_FOUND');
                     } else if (statusUpdate.status === 'TRIP_STARTED') {
-                        console.log('🚗 Status: TRIP_STARTED');
+                        console.log('Status: TRIP_STARTED');
                         setRideStatus('TRIP_STARTED');
                     } else if (statusUpdate.status === 'TRIP_ENDED') {
-                        console.log('🏁 Status: TRIP_ENDED');
+                        console.log('Status: TRIP_ENDED');
                         setRideStatus('TRIP_ENDED');
                     }
                 } catch (err) {
-                    console.error('❌ Error parsing ride status:', err);
+                    console.error('Error parsing ride status:', err);
                 }
             });
 
             if (subscription) {
-                console.log(`✅ Rider successfully subscribed to /topic/ride-status/${riderId}`);
+                console.log('Rider successfully subscribed to /topic/ride-status/' + riderId);
             }
 
             return () => {
@@ -147,7 +147,7 @@ export default function BookingPanel({
 
         publish('/app/request-ride', rideRequest);
         setRideStatus('SEARCHING');
-        console.log('🚕 Ride requested:', rideRequest);
+        console.log('Ride requested:', rideRequest);
     };
 
     // Handle cancel search
