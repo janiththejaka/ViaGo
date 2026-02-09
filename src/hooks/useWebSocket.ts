@@ -25,9 +25,10 @@ export const useWebSocket = (brokerURL: string): WebSocketHookReturn => {
 
             // Add connection headers for authentication/identification
             connectHeaders: {
-                'X-Driver-Id': '1',  // Driver ID for backend to identify the user
-                'login': 'driver1',   // Optional: username
-                'passcode': 'driver1' // Optional: password (if backend requires)
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+                'X-Driver-Id': '1',  // Keep legacy header for now if needed
+                'login': 'driver1',
+                'passcode': 'driver1'
             },
 
             onConnect: () => {

@@ -8,6 +8,8 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useAuth } from '../context/AuthContext';
 import { TEST_CONFIG } from '../config/testConfig';
 
+import { API_CONFIG } from '../config/apiConfig';
+
 const libraries: ("places")[] = ["places"];
 
 export default function RideRequestPage() {
@@ -23,7 +25,7 @@ export default function RideRequestPage() {
     };
 
     // WebSocket connection
-    const { isConnected, subscribe, publish } = useWebSocket(TEST_CONFIG.WEBSOCKET.url);
+    const { isConnected, subscribe, publish } = useWebSocket(API_CONFIG.WEBSOCKET_URL);
 
     // State Management
     const [pickup, setPickup] = useState<{ lat: number; lng: number } | null>(null);

@@ -4,7 +4,7 @@ import { Button, Form, Card, Modal, Spinner, OverlayTrigger, Tooltip, Alert, Bad
 import { IMessage } from '@stomp/stompjs';
 // Icons
 import { FaMapMarkerAlt, FaTimes, FaCar, FaSearch, FaLocationArrow, FaStar } from 'react-icons/fa';
-import { TEST_CONFIG } from '../config/testConfig';
+import { useAuth } from '../context/AuthContext';
 
 interface DriverDetails {
     id: number;
@@ -38,6 +38,7 @@ export default function BookingPanel({
     isConnected, subscribe, publish
 }: BookingPanelProps) {
 
+    const { user } = useAuth(); // Get authenticated user
     // State
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const [activeField, setActiveField] = useState<'pickup' | 'drop'>('pickup');
@@ -51,8 +52,8 @@ export default function BookingPanel({
 
     // Subscribe to ride status updates
     useEffect(() => {
-        if (isConnected) {
-            const riderId = TEST_CONFIG.RIDER.id;
+        if (isConnected && user?.userId) {
+            const riderId = user.userId;
             console.log(`🔌 Rider subscribing to /topic/ride-status/${riderId}`);
 
             const subscription = subscribe(`/topic/ride-status/${riderId}`, (message) => {
@@ -90,7 +91,7 @@ export default function BookingPanel({
                 subscription?.unsubscribe();
             };
         }
-    }, [isConnected, subscribe]);
+    }, [isConnected, subscribe, user]);
 
     // Mobile Input Click
     const handleInputClick = (field: 'pickup' | 'drop') => {
@@ -113,11 +114,11 @@ export default function BookingPanel({
 
     // Handle ride request
     const handleRequestRide = () => {
-        if (!pickup || !drop || !tripDetails) return;
+        if (!pickup || !drop || !tripDetails || !user) return;
 
         const rideRequest = {
-            riderId: TEST_CONFIG.RIDER.id,
-            riderName: TEST_CONFIG.RIDER.name,
+            riderId: user.userId,
+            riderName: user.username, // Use real username
             pickupLat: pickup.lat,
             pickupLng: pickup.lng,
             pickupAddress: pickupText,

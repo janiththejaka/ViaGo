@@ -4,18 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { FaCar, FaHistory, FaWallet, FaSignOutAlt, FaMapMarkerAlt, FaBars, FaTimes, FaCheckCircle, FaTimesCircle, FaUserCircle } from 'react-icons/fa'
 import { useWebSocket } from '../../hooks/useWebSocket'
-import { TEST_CONFIG } from '../../config/testConfig'
+import { useRealLocation } from '../../hooks/useRealLocation'
+import { API_CONFIG } from '../../config/apiConfig'
 
-// Helper function to get driver ID from localStorage for testing
-const getTestDriverId = (): number => {
-    const storedId = localStorage.getItem('test_driver_id')
-    return storedId ? parseInt(storedId) : TEST_CONFIG.DRIVER.id
-}
+// Helper functions removed as they are no longer used
 
-// Helper function to get driver data by ID
-const getDriverData = (driverId: number) => {
-    return TEST_CONFIG.DRIVERS.find(d => d.id === driverId) || TEST_CONFIG.DRIVER
-}
 
 // TypeScript interfaces
 interface RideOffer {
@@ -33,15 +26,43 @@ const DriverDashboard = () => {
     const [activeTab, setActiveTab] = useState('dashboard')
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-    // Get driver ID from localStorage ONCE on mount (for multi-driver testing)
-    // Use useState to prevent recalculation on every render
-    const [driverId] = useState(() => authUser?.userId || getTestDriverId())
-    const [driverData] = useState(() => getDriverData(driverId))
+    // Get driver ID from auth context
+    const driverId = authUser?.userId;
+    const [driverData, setDriverData] = useState<any>(null);
 
-    console.log('🚗 Driver Dashboard initialized for:', driverData.name, '(ID:', driverId, ')')
+    // Fetch driver data from backend
+    useEffect(() => {
+        const fetchDriverProfile = async () => {
+            if (driverId) {
+                try {
+                    // TODO: Replace with actual API call to User Service
+                    // const response = await fetch(`${API_CONFIG.USER_URL}/${driverId}`);
+                    // const data = await response.json();
+
+                    // For now, simulating fetch or using auth user data + placeholders
+                    // We need the backend to provide vehicle details
+                    setDriverData({
+                        id: driverId,
+                        name: authUser?.username || 'Unknown Driver',
+                        vehicleNo: 'ABC-1234', // Placeholder until User Service provides this
+                        vehicleModel: 'Tuk Tuk', // Placeholder
+                        phone: '0771234567', // Placeholder
+                        location: { lat: 6.9271, lng: 79.8612 } // Default Colombo
+                    });
+                } catch (error) {
+                    console.error('Failed to fetch driver profile', error);
+                }
+            }
+        };
+        fetchDriverProfile();
+    }, [driverId, authUser]);
+
+
+
+    console.log('🚗 Driver Dashboard initialized for:', driverData?.name, '(ID:', driverId, ')');
 
     // WebSocket connection
-    const { isConnected, error: wsError, subscribe, publish } = useWebSocket(TEST_CONFIG.WEBSOCKET.url)
+    const { isConnected, error: wsError, subscribe, publish } = useWebSocket(API_CONFIG.WEBSOCKET_URL)
 
     // Driver online/offline state
     const [isOnline, setIsOnline] = useState(false)
@@ -64,7 +85,7 @@ const DriverDashboard = () => {
     // Subscribe to driver offers ONLY when driver is online
     useEffect(() => {
         if (isConnected && isOnline) {
-            console.log(`🔌 Driver ${driverId} (${driverData.name}) is ONLINE - subscribing to offers...`);
+            console.log(`🔌 Driver ${driverId} (${driverData?.name}) is ONLINE - subscribing to offers...`);
 
             const subscription = subscribe(`/topic/driver-offers/${driverId}`, (message) => {
                 console.log(`📨 [Driver ${driverId}] RAW MESSAGE RECEIVED:`, message);
@@ -96,7 +117,7 @@ const DriverDashboard = () => {
         } else {
             console.log(`⚠️ [Driver ${driverId}] WebSocket not connected`);
         }
-    }, [isConnected, isOnline, subscribe, driverId, driverData.name])
+    }, [isConnected, isOnline, subscribe, driverId, driverData?.name])
 
     // Subscribe to driver notifications
     useEffect(() => {
@@ -158,57 +179,81 @@ const DriverDashboard = () => {
         }
     }
 
-    // Start/stop location broadcasting based on online status and subscription readiness
+    // Real Location Hook
+    const { location: realLocation, error: locationError, isTracking } = useRealLocation(isOnline);
+
+    useEffect(() => {
+        if (locationError) {
+            console.error('📍 GPS Error:', locationError);
+        }
+    }, [locationError]);
+
+    // Effect: Broadcast location updates when online and tracking
+    useEffect(() => {
+        if (isOnline && isConnected && realLocation && isTracking) {
+            // We rely on the interval for consistent updates to backend, 
+            // but use the LATEST real location stored in the ref.
+        }
+    }, [isOnline, isConnected, realLocation, isTracking, driverId]);
+
+    // Use a ref to store the latest location for the interval
+    const latestLocationRef = useRef<{ lat: number, lng: number } | null>(null);
+
+    useEffect(() => {
+        if (realLocation) {
+            latestLocationRef.current = realLocation;
+        }
+    }, [realLocation]);
+
+    // Start/stop location broadcasting based on online status
     useEffect(() => {
         if (isOnline && isConnected) {
-            // Driver is online and WebSocket is connected
-            // Wait a brief moment to ensure subscription is established
-            const startBroadcastTimer = setTimeout(() => {
-                console.log(`📡 [Driver ${driverId}] Starting location broadcast...`)
+            console.log(`📡 [Driver ${driverId}] Starting location broadcast...`)
 
-                // Send initial location immediately
-                const baseLat = driverData.location.lat
-                const baseLng = driverData.location.lng
-                const randomOffset = () => (Math.random() - 0.5) * 0.005
-
+            // Send initial location immediately if available
+            if (latestLocationRef.current) {
                 const initialLocation = {
                     driverId: driverId,
-                    lat: baseLat + randomOffset(),
-                    lng: baseLng + randomOffset()
+                    lat: latestLocationRef.current.lat,
+                    lng: latestLocationRef.current.lng
                 }
-
                 console.log(`📍 [Driver ${driverId}] Sending initial location:`, initialLocation)
                 publish('/app/driver-update', initialLocation)
+            }
 
-                // Then start interval for continuous updates
-                locationIntervalRef.current = setInterval(() => {
+            // Start interval for continuous updates
+            locationIntervalRef.current = setInterval(() => {
+                if (latestLocationRef.current) {
                     const locationUpdate = {
                         driverId: driverId,
-                        lat: baseLat + randomOffset(),
-                        lng: baseLng + randomOffset()
+                        lat: latestLocationRef.current.lat,
+                        lng: latestLocationRef.current.lng
                     }
                     publish('/app/driver-update', locationUpdate)
-                }, TEST_CONFIG.LOCATION_UPDATE_INTERVAL)
+                } else if (!isTracking && !latestLocationRef.current) {
+                    // Fallback if no real location yet (optional: maybe send last known or default?)
+                    // For now, doing nothing until GPS lock
+                    console.warn(`⚠️ [Driver ${driverId}] Waiting for GPS lock...`);
+                }
+            }, 3000) // Update location every 3 seconds
 
-                console.log(`✅ [Driver ${driverId}] Location broadcasting started`)
-            }, 500) // 500ms delay to ensure subscription is ready
+            console.log(`✅ [Driver ${driverId}] Location broadcasting started`)
 
             return () => {
-                clearTimeout(startBroadcastTimer)
                 if (locationIntervalRef.current) {
                     clearInterval(locationIntervalRef.current)
                     locationIntervalRef.current = null
                 }
             }
         } else if (!isOnline && locationIntervalRef.current) {
-            // Driver went offline, stop broadcasting
+            // Driver went offline
             clearInterval(locationIntervalRef.current)
             locationIntervalRef.current = null
             console.log(`🚫 [Driver ${driverId}] Location broadcasting stopped`)
         }
-    }, [isOnline, isConnected, driverId, driverData.location.lat, driverData.location.lng, publish])
+    }, [isOnline, isConnected, driverId, publish, isTracking]);
 
-    // Cleanup interval on unmount
+    // Cleanup
     useEffect(() => {
         return () => {
             if (locationIntervalRef.current) {
@@ -227,13 +272,13 @@ const DriverDashboard = () => {
             status: 'ACCEPTED'
         }
 
-        console.log(`🚀 [Driver ${driverId} - ${driverData.name}] ACCEPTING RIDE:`, acceptPayload)
+        console.log(`🚀 [Driver ${driverId} - ${driverData?.name}] ACCEPTING RIDE:`, acceptPayload)
         console.log(`🚀 [Driver ${driverId}] Current offer:`, currentOffer)
 
         publish('/app/accept-ride', acceptPayload)
         setShowOfferModal(false)
         // Don't clear currentOffer here - let the SUCCESS notification handle it
-        console.log(`✅ [Driver ${driverId} - ${driverData.name}] Ride acceptance sent to backend, waiting for confirmation`)
+        console.log(`✅ [Driver ${driverId} - ${driverData?.name}] Ride acceptance sent to backend, waiting for confirmation`)
     }
 
     // Handle declining a ride
@@ -277,6 +322,11 @@ const DriverDashboard = () => {
             setAcceptedRide(null)
             setRideStatus('IDLE')
         }, 2000)
+    }
+
+    // Show loading if driver data not ready
+    if (!driverData) {
+        return <div className="d-flex justify-content-center align-items-center vh-100"><Spinner animation="border" /></div>;
     }
 
     return (
